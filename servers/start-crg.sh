@@ -17,7 +17,7 @@ CRG_VERSION="2.3.2"
 if [ ! -x "$CRG_BIN" ]; then
   echo "[jintech-omg-dev] Installing code-review-graph==${CRG_VERSION}..." >&2
   python3 -m venv "$VENV_DIR" >&2
-  "$VENV_DIR/bin/pip" install --quiet "code-review-graph==${CRG_VERSION}" >&2
+  "$VENV_DIR/bin/pip" install --quiet -r "${PLUGIN_ROOT}/servers/requirements.txt" >&2
   echo "[jintech-omg-dev] Installation complete." >&2
 fi
 
