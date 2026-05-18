@@ -2,6 +2,8 @@
 
 Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipeline, the code-review-graph MCP server, and enforcement hooks into a single installable unit.
 
+**Supports macOS and Windows.**
+
 ---
 
 ## What's included
@@ -22,12 +24,16 @@ Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipe
 
 ## Prerequisites
 
-- Claude Code (latest stable)
-- macOS or Linux
-- Python 3.9+ (for the CRG server)
-- Access to the Jintech private PyPI registry (`JINTECH_PYPI_URL` env var)
-- Bitbucket credentials (`BITBUCKET_USER`, `BITBUCKET_TOKEN`)
-- Jira/Atlassian MCP configured
+| Requirement | macOS | Windows |
+|---|---|---|
+| Claude Code (latest stable) | ✅ | ✅ |
+| Python 3.9+ | ✅ | ✅ — install from [python.org](https://www.python.org/downloads/) or Microsoft Store; ensure `python3` is on PATH |
+| Git | ✅ | ✅ — [Git for Windows](https://git-scm.com/download/win) (includes Git Bash) |
+| Perl + Perl::Critic | ✅ | ✅ — [Strawberry Perl](https://strawberryperl.com/) recommended |
+| Bitbucket credentials | ✅ | ✅ |
+| Jira/Atlassian MCP | ✅ | ✅ |
+
+> **Windows note:** All hook scripts and the CRG server are written in Python — no bash required. `python3` must be on your PATH (verify with `python3 --version` in a terminal).
 
 ---
 
@@ -35,41 +41,59 @@ Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipe
 
 ### 1. Add the Jintech plugin marketplace
 
-```bash
-/plugin marketplace add https://github.com/jintech/claude-marketplace
+```
+/plugin marketplace add https://github.com/ahsan0444/claude-marketplace
 ```
 
 ### 2. Install this plugin
 
-```bash
+```
 /plugin install jintech-omg-dev
 ```
 
 This will:
 - Copy skills and commands into your Claude Code installation
-- Register the `code-review-graph` MCP server
-- Install hooks into your session lifecycle
+- Register the `code-review-graph` MCP server (auto-installs via pip on first use)
+- Wire up the lifecycle hooks
 
 ### 3. Set required environment variables
 
-Add to `~/.zshrc` (or `~/.bashrc`):
+#### macOS / Linux — add to `~/.zshrc` or `~/.bashrc`
 
 ```bash
-export JINTECH_PYPI_URL="https://pypi.jintech.com/simple"
 export BITBUCKET_USER="your-bitbucket-username"
 export BITBUCKET_TOKEN="your-bitbucket-app-password"
 ```
 
-Restart your shell or run `source ~/.zshrc`.
+Then run `source ~/.zshrc`.
 
-### 4. Initialise the code-review-graph for each repo (first time only)
+#### Windows — add to your PowerShell profile (`$PROFILE`) or System Environment Variables
 
+```powershell
+$env:BITBUCKET_USER = "your-bitbucket-username"
+$env:BITBUCKET_TOKEN = "your-bitbucket-app-password"
+```
+
+To persist across sessions, set them as **System Environment Variables**:
+> Start → "Edit the system environment variables" → Environment Variables → New
+
+### 4. Initialise the code-review-graph (first time per repo)
+
+Navigate to your OMG checkout and run:
+
+#### macOS
 ```bash
 cd /Users/Shared/Code/omg
 code-review-graph build
 ```
 
-This takes ~5–10 minutes on first run. Subsequent updates are incremental (triggered automatically after each file edit).
+#### Windows
+```powershell
+cd C:\Code\omg        # adjust to your checkout path
+code-review-graph build
+```
+
+This takes ~5–10 minutes on first run. Subsequent updates run automatically after each file edit via the `PostToolUse` hook.
 
 ---
 
@@ -109,36 +133,66 @@ Or with the fully-qualified plugin namespace from any directory:
 /pr (Session 5)
 ```
 
-Each skill is a fresh session. See [WORKFLOW.md](WORKFLOW.md) for architecture diagrams.
+Each skill is a fresh session. See [WORKFLOW.md](WORKFLOW.md) for full architecture diagrams.
 
 ---
 
 ## Code-review-graph
 
-The graph MCP server is started automatically when the plugin activates. It requires a built graph at `.code-review-graph/graph.db` in the project root.
+The MCP server starts automatically when the plugin activates. It self-installs `code-review-graph` from PyPI into a plugin-local venv on first run — no manual pip install needed.
 
-Manual commands:
+It requires a built graph at `.code-review-graph/graph.db` in your project root (Step 4 above).
+
+**Manual commands** (run from inside your OMG checkout):
 
 ```bash
-code-review-graph status    # check graph health
+code-review-graph status    # check graph health and node count
 code-review-graph update    # incremental update (changed files only)
-code-review-graph build     # full rebuild (~5-10 min)
+code-review-graph build     # full rebuild (~5–10 min)
 ```
 
-The graph auto-updates after every file edit via the `PostToolUse` hook. Weekly full rebuilds run via launchd (Monday 3am).
+**Auto-rebuild schedule:**
+
+| Platform | Mechanism | Schedule |
+|---|---|---|
+| macOS | launchd (`com.omg.graphify-rebuild.plist`) | Every Monday 3am |
+| Windows | Task Scheduler | Set up manually — see below |
+
+#### Windows: set up weekly auto-rebuild
+
+Run once in PowerShell (Admin):
+
+```powershell
+$action  = New-ScheduledTaskAction -Execute "code-review-graph" -Argument "build" -WorkingDirectory "C:\Code\omg"
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 3am
+Register-ScheduledTask -TaskName "OMG-GraphRebuild" -Action $action -Trigger $trigger -RunLevel Highest
+```
+
+Adjust `-WorkingDirectory` to match your OMG checkout path.
 
 ---
 
 ## Updating the plugin
 
-```bash
+```
 /plugin update jintech-omg-dev
 ```
 
 ---
 
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `python3: command not found` (Windows) | Add Python to PATH or use `python` instead — check with `where python3` |
+| `code-review-graph: command not found` | The plugin venv may not have activated — try `/plugin reinit jintech-omg-dev` |
+| Hook not firing | Verify hooks are registered: check `.claude/settings.json` in your project |
+| Graph DB missing | Run `code-review-graph build` from inside the OMG repo root |
+
+---
+
 ## Contributing
 
-Changes to skills, hooks, or the CRG server go through the standard OMG development pipeline. Raise a PR against `github.com/jintech/jintech-omg-dev`.
+Changes to skills, hooks, or the CRG server go through the standard OMG development pipeline. Raise a PR against [github.com/ahsan0444/jintech-omg-dev](https://github.com/ahsan0444/jintech-omg-dev).
 
 For questions: #dev-tooling on Slack or raise a Jira ticket in the TOOLS project.
