@@ -27,7 +27,10 @@ if not os.path.exists(graph_db):
     sys.exit(0)
 
 # Resolve CRG binary — plugin venv first, then PATH
-plugin_root = os.environ.get('CLAUDE_PLUGIN_ROOT', '')
+plugin_root = os.environ.get(
+    'CLAUDE_PLUGIN_ROOT',
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 if sys.platform == 'win32':
     crg_in_plugin = os.path.join(plugin_root, 'servers', 'venv', 'Scripts', 'code-review-graph.exe')
 else:

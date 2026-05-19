@@ -4,13 +4,12 @@ Cross-platform bootstrap for the code-review-graph MCP server.
 On first run: creates a plugin-local venv and pip-installs code-review-graph.
 On subsequent runs: starts the already-installed server directly.
 
-Environment:
-  CRG_DB_PATH  — path to graph.db (falls back to .code-review-graph/graph.db in git root)
+The server is multi-repo — no fixed DB path needed at startup.
+Each MCP tool call passes repo_root to select the correct graph.
 """
 import sys
 import os
 import subprocess
-import shutil
 
 PLUGIN_ROOT = os.environ.get(
     'CLAUDE_PLUGIN_ROOT',
@@ -36,21 +35,4 @@ def install():
 if not os.path.exists(CRG_BIN):
     install()
 
-# Resolve DB path
-db_path = os.environ.get('CRG_DB_PATH', '')
-if not db_path:
-    try:
-        r = subprocess.run(
-            ['git', 'rev-parse', '--show-toplevel'],
-            capture_output=True, text=True, timeout=5
-        )
-        project_root = r.stdout.strip() if r.returncode == 0 else ''
-    except Exception:
-        project_root = ''
-    db_path = os.path.join(project_root, '.code-review-graph', 'graph.db') if project_root else ''
-
-args = [CRG_BIN, 'serve']
-if db_path:
-    args += ['--db', db_path]
-
-os.execv(CRG_BIN, args)
+os.execv(CRG_BIN, [CRG_BIN, 'serve'])
