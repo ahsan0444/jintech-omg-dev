@@ -18,7 +18,7 @@ Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipe
 | `/debug` | Root cause analysis — traces, ranks hypotheses, routes to /implement or /ticket |
 | `code-review-graph` MCP | Semantic graph of 9k+ nodes, 78k+ edges across the OMG codebase — 14 tools wired into skills |
 | Hooks | `enforce-mcp-search` (PreToolUse), `post-edit-update` (PostToolUse), `session-start-status` (SessionStart) |
-| Commands | `/learn`, `/save-session`, `/resume-session` |
+| Commands | `/learn`, `/save-session`, `/resume-session`, `/embed-graph` |
 
 ---
 
@@ -84,16 +84,30 @@ Navigate to your OMG checkout and run:
 #### macOS
 ```bash
 cd /Users/Shared/Code/omg
-code-review-graph build
+code-review-graph register . --alias omg   # register the repo with CRG
+code-review-graph build                     # parse all files (~5-10 min)
 ```
 
 #### Windows
 ```powershell
 cd C:\Code\omg        # adjust to your checkout path
+code-review-graph register . --alias omg
 code-review-graph build
 ```
 
-This takes ~5–10 minutes on first run. Subsequent updates run automatically after each file edit via the `PostToolUse` hook.
+**Then enable semantic search (one-time, ~2-5 min):**
+
+After the build completes, restart Claude Code (so the MCP server picks up the new graph), then run:
+
+```
+/embed-graph
+```
+
+This generates vector embeddings locally using `all-MiniLM-L6-v2` (no API key required). Without this step, MCP search falls back to keyword matching only.
+
+> **Auto-embed:** The plugin detects missing embeddings on startup and triggers embedding in the background automatically. If the `/embed-graph` command reports "already embedded", no action needed.
+
+Subsequent updates run automatically after each file edit via the `PostToolUse` hook.
 
 ---
 

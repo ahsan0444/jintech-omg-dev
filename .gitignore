@@ -1,6 +1,7 @@
-servers/venv/
 *.pyc
-__pycache__/
-.DS_Store
-*.swp
 *.swo
+*.swp
+.DS_Store
+__pycache__/
+servers/embed.log
+servers/venv/

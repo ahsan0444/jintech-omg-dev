@@ -1,1 +1,1 @@
-code-review-graph==2.3.2
+code-review-graph[embeddings]==2.3.2
