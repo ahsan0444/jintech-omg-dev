@@ -268,7 +268,7 @@ Agent(
   User notes: <USER_NOTES — additional context supplied at invocation, or "none">
   Signals: DB=<DB_SIGNAL> | LIB=<LIB_SIGNAL>
 
-  Tool call budget: 5. Spend the highest-signal call first. Stop as soon as affected
+  Tool call budget: 6. Spend the highest-signal call first. Stop as soon as affected
   files are identifiable — do not fill the budget unnecessarily.
 
   HARD RULES: no file reads (sed/cat/Read/head/tail/less/more), no full-file greps (grep -n "." / grep -c ""), no find-then-read. Paths and line ranges only. Stop when files identified.
@@ -286,8 +286,15 @@ Agent(
     If node names are returned and callers are needed:
     mcp__code-review-graph__query_graph_tool(pattern="callers_of", target="<node>", detail_level="minimal", repo_root="<REPO_ROOT>")
 
+    If nodes are returned and the ticket involves multi-step logic or data flow:
+    mcp__code-review-graph__get_affected_flows_tool(node="<most relevant node>", repo_root="<REPO_ROOT>")  ← surfaces which execution flows the node participates in — informs impact scope
+
     If both searches return 0 results → broaden:
     mcp__code-review-graph__traverse_graph_tool(query="<broader keyword>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
+
+    If DB=yes (ticket touches both app and database):
+    mcp__code-review-graph__cross_repo_search_tool(query="<entity name from ticket>", repo_roots=["<REPO_ROOT>", "<DB_COMPANION>"])
+    → finds the same entity across omg + omg_db simultaneously
 
     If all MCP searches return 0 results AND the ticket is about Perl/JS logic → set CONFIDENCE: low. Do NOT fall back to grep.
     If all MCP searches return 0 results AND the ticket is about a UI/template change → grep views/ is permitted (MCP has no Template Toolkit coverage):
@@ -422,22 +429,32 @@ Agent(
   prompt="""
   Working directory: <REPO_ROOT>
   Ticket context: <SUMMARY from Step 1>
-  Tool call budget: 3.
+  Key nodes from Step 2c (if available): <node names returned by semantic_search_nodes_tool>
+  Tool call budget: 4.
 
   HARD RULES: no file reads (sed/cat/Read/head/tail/less/more), no full-file greps (grep -n "." / grep -c ""), no find-then-read. Paths and line ranges only.
 
-  PHASE 1 — Targeted test search:
-    Grep(pattern="<key entity or function from ticket>", path="<REPO_ROOT>/t", glob="*.t")
-    If results found: STOP.
+  NOTE — Perl test limitation: CRG does not recognise the Perl `t/` convention (*.t files).
+  `tests_for` pattern returns 0 results for Perl code — skip Phase 1 for Perl tickets and go straight to Phase 2.
 
-  PHASE 2 — Broader search (only if Phase 1 empty):
-    Grep(pattern="<broader keyword from SUMMARY>", path="<REPO_ROOT>/t", type="perl")
+  PHASE 1 — Graph-based test lookup (MCP ONLY — use for JS/Python nodes only):
+    For each key node identified (up to 2 nodes) where language is JS or Python:
+    mcp__code-review-graph__query_graph_tool(pattern="tests_for", target="<node name>", detail_level="minimal", repo_root="<REPO_ROOT>")
+    → returns test files that cover this node. If results found: STOP.
+
+  PHASE 2 — Knowledge gap detection:
+    mcp__code-review-graph__get_knowledge_gaps_tool(repo_root="<REPO_ROOT>")
+    → surfaces functions/modules with no test coverage. Check if affected nodes appear in gaps.
+
+  PHASE 3 — Grep fallback (always for Perl; fallback for JS/Python if Phase 1 empty):
+    Grep(pattern="<key entity or function from ticket>", path="<REPO_ROOT>/t", glob="*.t")
 
   Return schema only (no prose):
 
   TEST_FILES:
     - <absolute path>:<line range> — <one-line reason>
   COVERAGE_GAP: yes | no
+  GAP_DETAIL: <node names with no test coverage, or "none">
   """
 )
 ```

@@ -150,7 +150,13 @@ Agent(
      read enough context to understand WHY it's there before changing it.
      Do not remove or bypass code that looks unused — investigate first.
   4. TDD — write the test BEFORE making the edit:
-     a. Find the test file: Bash("find <REPO_ROOT>/t -name '*.t' -exec grep -l '<module_basename>' {} \\; 2>/dev/null | head -1")
+     a. Find the test file:
+        NOTE — CRG `tests_for` pattern does NOT recognise Perl *.t files (CRG limitation).
+        For Perl: use find directly:
+        Bash("find <REPO_ROOT>/t -name '*.t' -exec grep -l '<module_basename>' {} \\; 2>/dev/null | head -1")
+        For JS/Python: try MCP first:
+        mcp__code-review-graph__query_graph_tool(pattern="tests_for", target="<module_basename>", detail_level="minimal", repo_root="<REPO_ROOT>")
+        If MCP returns a path: use it. Otherwise fall back to find.
         If no test file found: note "no existing test file — skip TDD for this step" and proceed to step 5.
      b. Add a failing test case to the test file (one assert that will FAIL until the change is made)
      c. Run: Bash("cd <REPO_ROOT> && prove -l <test_file> 2>&1 | tail -15")
@@ -231,6 +237,11 @@ Agent(
   Changed Perl files this session: <list .pm files from change log>
   Repo root: <REPO_ROOT>
 
+  PHASE 0 — Semantic risk check (run first, 1 call):
+    mcp__code-review-graph__detect_changes_tool(changed_files=["<file1>", "<file2>", ...], repo_root="<REPO_ROOT>")
+    Report RISK_TIER from result. Flag any hub/bridge nodes as WARNING.
+    If graph absent or tool errors: skip silently and continue to Phase 1.
+
   For each .pm file, run these targeted checks:
 
   Files in lib/*/dao/ (*_db.pm):
@@ -255,6 +266,7 @@ Agent(
 
   Return ONLY the schema below. No prose, no preamble.
 
+  RISK_TIER: high | medium | low | unknown
   BLOCKERS: <file:line — issue, or "none">
   WARNINGS: <file:line — issue, or "none">
   """
@@ -262,6 +274,7 @@ Agent(
 ```
 
 If BLOCKERS found: surface them in Step 3 report under "Layer Violations — fix before /prepr".
+If RISK_TIER is high: surface in Step 3 report under "Semantic Risk — review before /prepr".
 If clean: log "Layer check: clean" — do not echo in report.
 
 Skip this step if no .pm files were changed.

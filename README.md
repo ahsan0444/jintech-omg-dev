@@ -16,7 +16,7 @@ Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipe
 | `/pr` | Creates a Bitbucket draft PR, posts PR link back to Jira |
 | `/grill-me` | Stress-tests a design/plan before /ticket runs |
 | `/debug` | Root cause analysis — traces, ranks hypotheses, routes to /implement or /ticket |
-| `code-review-graph` MCP | Semantic graph of 49k+ nodes across the OMG codebase |
+| `code-review-graph` MCP | Semantic graph of 9k+ nodes, 78k+ edges across the OMG codebase — 14 tools wired into skills |
 | Hooks | `enforce-mcp-search` (PreToolUse), `post-edit-update` (PostToolUse), `session-start-status` (SessionStart) |
 | Commands | `/learn`, `/save-session`, `/resume-session` |
 
@@ -27,7 +27,7 @@ Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipe
 | Requirement | macOS | Windows |
 |---|---|---|
 | Claude Code (latest stable) | ✅ | ✅ |
-| Python 3.9+ | ✅ | ✅ — install from [python.org](https://www.python.org/downloads/) or Microsoft Store; ensure `python3` is on PATH |
+| Python 3.12+ (3.14 recommended) | ✅ | ✅ — install from [python.org](https://www.python.org/downloads/) or Microsoft Store; ensure `python3` is on PATH. **`code-review-graph` requires Python 3.12 minimum** — Python 3.9 will fail at install. |
 | Git | ✅ | ✅ — [Git for Windows](https://git-scm.com/download/win) (includes Git Bash) |
 | Perl + Perl::Critic | ✅ | ✅ — [Strawberry Perl](https://strawberryperl.com/) recommended |
 | Bitbucket credentials | ✅ | ✅ |
@@ -186,8 +186,10 @@ Adjust `-WorkingDirectory` to match your OMG checkout path.
 |---|---|
 | `python3: command not found` (Windows) | Add Python to PATH or use `python` instead — check with `where python3` |
 | `code-review-graph: command not found` | The plugin venv may not have activated — try `/plugin reinit jintech-omg-dev` |
+| `code-review-graph` install fails on Python 3.9/3.10/3.11 | Requires Python 3.12+. On macOS: `brew install python@3.14`. On Windows: download from python.org and ensure it's on PATH |
 | Hook not firing | Verify hooks are registered: check `.claude/settings.json` in your project |
 | Graph DB missing | Run `code-review-graph build` from inside the OMG repo root |
+| MCP tools return 0 results | Ensure graph is built and registered: `code-review-graph register /path/to/omg --alias omg` then verify with `code-review-graph status` |
 
 ---
 

@@ -133,11 +133,26 @@ Agent(
       mcp__code-review-graph__traverse_graph_tool(query="<broader term>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
     Stop as soon as entry point file + line is identified.
 
-  PHASE 2 — Trace to the broken layer (2-3 calls, MCP ONLY):
+  PHASE 1.5 — Named flow lookup (1 call, run after entry point found):
+    mcp__code-review-graph__list_flows_tool(repo_root="<REPO_ROOT>")
+    → if a named flow matches the symptom domain (e.g. "booking", "payment", "auth"), fetch it:
+    mcp__code-review-graph__get_flow_tool(flow_name="<matching flow name>", repo_root="<REPO_ROOT>")
+    → returns the full ordered node sequence for that flow — use this to map send→receive→effect without hop-by-hop graph queries.
+    Skip if no matching named flow found.
+
+  PHASE 2 — Trace to the broken layer (3-4 calls, MCP ONLY):
     Follow the call chain one hop at a time using graph queries:
       mcp__code-review-graph__query_graph_tool(pattern="callees_of", target="<entry point node>", detail_level="minimal", repo_root="<REPO_ROOT>")
       mcp__code-review-graph__query_graph_tool(pattern="callers_of", target="<receiver node>", detail_level="minimal", repo_root="<REPO_ROOT>")
     Map: Sender → what it calls → Receiver → what it reads or returns → Side effect (DOM, DB write, event)
+
+    If the chain involves multi-step logic or the divergence point is still unclear:
+      mcp__code-review-graph__get_affected_flows_tool(node="<entry point node>", repo_root="<REPO_ROOT>")
+      Returns criticality-ranked execution flows the node participates in — use to pinpoint which flow deviates.
+
+    Check for unexpected coupling (1 call, only if divergence is still unclear after callees/callers):
+      mcp__code-review-graph__get_surprising_connections_tool(repo_root="<REPO_ROOT>")
+      → surfaces unexpected cross-module dependencies. If the entry point appears in a surprising connection, this may explain why the bug manifests unexpectedly.
     Stop when the full send→receive→effect chain is mapped or budget is exhausted.
 
   PHASE 3 — Identify divergence point (1 call, only if chain is mapped):
@@ -276,19 +291,27 @@ Agent(
   Working directory: <REPO_ROOT>
   Hypothesis to verify: <top hypothesis from Step 3>
   Evidence already found: <file:line range from Step 2>
-  Tool call budget: 2. No file reads.
+  Tool call budget: 3. No file reads.
 
-  Run the single most targeted grep that would confirm or refute this hypothesis.
-  A confirming result is one that matches the pattern at the expected location.
-  A refuting result is a definitive absence or a different value at that location.
+  STEP 1 — Confirm or refute the hypothesis:
+    Run the single most targeted grep that would confirm or refute this hypothesis.
+    A confirming result is one that matches the pattern at the expected location.
+    A refuting result is a definitive absence or a different value at that location.
+    HARD RULES: no file reads (sed/cat/Read), no full-file greps. One Grep call, one optional follow-up.
 
-  HARD RULES: no file reads (sed/cat/Read), no full-file greps. One Grep call, one optional follow-up.
+  STEP 2 — Test coverage gap (1 call, run after step 1 regardless of verdict):
+    mcp__code-review-graph__get_knowledge_gaps_tool(repo_root="<REPO_ROOT>")
+    Check if the node at the confirmed/suspected location appears in the gaps list.
+    → explains WHY the bug wasn't caught (no test coverage for this node).
+    If graph absent or tool errors: skip silently.
 
   Return schema only (no prose):
 
   VERDICT: confirmed | refuted | inconclusive
   EVIDENCE: <grep pattern> matched at <path>:<line> — <one sentence>
   COUNTER_EVIDENCE: <what the refute found, or "none">
+  COVERAGE_GAP: yes | no | unknown
+  GAP_DETAIL: <node name with no test coverage, or "none">
   """
 )
 ```
@@ -313,6 +336,7 @@ ROOT_CAUSE:   <what is actually broken — one sentence>
 EVIDENCE:     <absolute path>:<line range> — "<unique grep string>"
 CONFIDENCE:   high | medium | low
 FIX_SCOPE:    single-file | multi-file | schema-change
+COVERAGE_GAP: <node name with no test coverage — explains why bug wasn't caught, or "none">
 
 HYPOTHESES CONSIDERED:
   1. [high]   <hypothesis> — <confirmed | ruled out | untested>

@@ -105,6 +105,46 @@ If no files remain after exclusions: *"No reviewable changes found vs <BASE_BRAN
 
 ---
 
+## Step 0.5 — Semantic Risk Assessment (Haiku, Explore)
+
+Spawn immediately after Step 0, **before** the parallel lint checks. Results feed into synthesis as a risk tier.
+
+```
+Agent(
+  description="Semantic risk assessment — changed files",
+  subagent_type="Explore",
+  model="haiku",
+  prompt="""
+  Changed files: <full list from Step 0>
+  Repo root: <REPO_ROOT>
+  Tool call budget: 3.
+
+  PHASE 1 — Risk-score every changed file:
+    mcp__code-review-graph__detect_changes_tool(changed_files=["<file1>", "<file2>", ...], repo_root="<REPO_ROOT>")
+    Identifies hub nodes, bridge nodes, cross-community coupling, and risk scores.
+    If graph.db is absent or tool errors: return RISK_TIER: unknown and stop.
+
+  PHASE 2 — Blast radius (only for files that score high-risk in Phase 1):
+    For each high-risk file:
+    mcp__code-review-graph__get_impact_radius_tool(node="<high-risk node name>", repo_root="<REPO_ROOT>")
+    Returns all nodes that transitively depend on this node.
+
+  Return schema only (no prose):
+
+  RISK_TIER: high | medium | low | unknown
+  HIGH_RISK_FILES:
+    - <file path> — <reason: hub node | bridge node | cross-community | high dependent count>
+  IMPACT_RADIUS:
+    - <file path> — <N> dependents: <top 3 dependent names>
+  (omit HIGH_RISK_FILES and IMPACT_RADIUS sections entirely if RISK_TIER is low or unknown)
+  """
+)
+```
+
+Collect result. Proceed to Step 1 in parallel with this result available for synthesis.
+
+---
+
 ## Step 1 — Parallel Checks
 
 Spawn all applicable subagents **in one message** based on non-empty buckets:
@@ -121,6 +161,22 @@ Agent(
   prompt="""
   Changed Perl files: <list from Step 0>
   Repo root: <REPO_ROOT>
+
+  PHASE 0 — Graph-based structural review (MCP, 1-3 calls, run before linting):
+    For each changed Perl file (use module basename as node name):
+    mcp__code-review-graph__get_review_context_tool(node="<module_basename>", repo_root="<REPO_ROOT>")
+    → surfaces the node's role, its callers, callees, and any known complexity flags.
+    Flag nodes with >10 callers as WARNING (high-impact change).
+
+    mcp__code-review-graph__find_large_functions_tool(repo_root="<REPO_ROOT>")
+    → check if any changed files contain functions flagged as overly large/complex.
+    Flag matches as WARNING with function name and line count.
+
+    mcp__code-review-graph__get_knowledge_gaps_tool(repo_root="<REPO_ROOT>")
+    → check if any changed nodes appear in the gaps list (no test coverage).
+    Flag matches as WARNING: "No test coverage for <node> — add tests before PR."
+
+    If graph absent or any tool errors: skip Phase 0 silently and continue.
 
   PHASE 1 — Perl::Critic (run for each file):
     Try in order until one works:
@@ -167,6 +223,9 @@ Agent(
   Return schema only, per file (no prose):
 
   FILE: <path>
+  GRAPH_ROLE: <node role summary from get_review_context_tool, or "unknown">
+  LARGE_FUNCTIONS: <function names flagged by find_large_functions_tool, or "none">
+  COVERAGE_GAPS: <nodes with no test coverage from get_knowledge_gaps_tool, or "none">
   PERLCRITIC: <violations list, or "clean">
   BLOCKER: <description — line N, or "none">
   WARNING: <description — line N, or "none">
@@ -394,6 +453,13 @@ Collect all subagent results. Build the report from findings only — do not re-
 ## Summary
 Changed files: <N> | Perl: <n> | TT: <n> | JS: <n> | SCSS/CSS: <n> | SQL: <n>
 Test suite: pass | fail | not run
+
+---
+
+## ⚡ RISK TIER: <high | medium | low | unknown>
+<If high or medium: list HIGH_RISK_FILES with reason and IMPACT_RADIUS>
+<If low: "No high-risk files detected — changes are architecturally contained.">
+<If unknown: "Graph not available — semantic risk assessment skipped.">
 
 ---
 

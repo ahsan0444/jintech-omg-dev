@@ -11,7 +11,7 @@ we reach a shared understanding. Walk down each branch of the design
 tree resolving dependencies between decisions one by one.
 
 If a question can be answered by exploring the codebase, explore
-the codebase instead. Use targeted grep via haiku subagents — lower token cost and faster orientation.
+the codebase instead. Use MCP tools in haiku subagents — lower token cost and faster orientation.
 
 For each question, provide your recommended answer.
 
@@ -36,6 +36,42 @@ CURRENT_BRANCH=$(git -C "$REPO_ROOT" branch --show-current 2>/dev/null)
 echo "ROOT=$REPO_ROOT | BRANCH=$CURRENT_BRANCH"
 ```
 
+**Architectural orientation** — before the first question, spawn one haiku subagent:
+
+```
+Agent(
+  description="Architectural overview for grill-me: <TICKET_ID>",
+  subagent_type="Explore",
+  model="haiku",
+  prompt="""
+  Working directory: <REPO_ROOT>
+  MCP ONLY — grep is policy-blocked.
+
+  STEP 1 — Get high-level architecture:
+    mcp__code-review-graph__get_architecture_overview_tool(repo_root="<REPO_ROOT>")
+    → communities, hub nodes, dominant flows
+
+  STEP 2 — If the ticket mentions a specific domain/feature, find its community:
+    mcp__code-review-graph__semantic_search_nodes_tool(query="<key noun from ticket title>", detail_level="minimal", repo_root="<REPO_ROOT>")
+    If a node is returned:
+    mcp__code-review-graph__get_community_tool(node="<node name>", repo_root="<REPO_ROOT>")
+    → reveals which subsystem owns this feature and its main dependencies
+
+  STEP 3 — Surface suggested investigation angles:
+    mcp__code-review-graph__get_suggested_questions_tool(repo_root="<REPO_ROOT>")
+    → use returned questions as seeds for interview branches
+
+  Return schema only (no prose):
+
+  ARCHITECTURE_SUMMARY: <2-3 sentences: dominant layers, major communities>
+  FEATURE_COMMUNITY: <community name and key members, or "not found">
+  SUGGESTED_ANGLES: <bullet list of 3-5 questions from get_suggested_questions_tool>
+  """
+)
+```
+
+Use ARCHITECTURE_SUMMARY to frame early questions. Use SUGGESTED_ANGLES to seed interview branches not obvious from the ticket alone.
+
 **Ticket ID** — resolve in this order:
 1. Provided as arg to /grill-me
 2. Parse from CURRENT_BRANCH (e.g. `OMGXI-8616_jin` → `OMGXI-8616`)
@@ -56,9 +92,14 @@ Agent(
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
-  MCP ONLY — grep is policy-blocked. Use:
-    mcp__code-review-graph__semantic_search_nodes_tool(query="<term>", detail_level="minimal", repo_root="<REPO_ROOT>")
-    If 0 results: mcp__code-review-graph__traverse_graph_tool(query="<term>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
+  MCP ONLY — grep is policy-blocked. Use in order:
+    1. mcp__code-review-graph__semantic_search_nodes_tool(query="<term>", detail_level="minimal", repo_root="<REPO_ROOT>")
+    2. If nodes returned and you need callers/callees:
+       mcp__code-review-graph__query_graph_tool(pattern="callers_of", target="<node>", detail_level="minimal", repo_root="<REPO_ROOT>")
+    3. If 0 results from step 1:
+       mcp__code-review-graph__traverse_graph_tool(query="<term>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
+    4. If exploring which subsystem owns a component:
+       mcp__code-review-graph__get_community_tool(node="<node name>", repo_root="<REPO_ROOT>")
   Return: file paths and module names only — no file contents.
   """
 )

@@ -76,7 +76,8 @@ flowchart TD
 flowchart TD
     Start["User: /grill-me [TICKET-ID]"]
     Setup["Step 0: Repo detection\nResolve TICKET_ID"]
-    Interview["Interview loop\nQ&A — one branch at a time\nSubagent: codebase exploration (haiku)"]
+    Orient["Architectural orientation (Haiku subagent)\nget_architecture_overview_tool\nget_community_tool · get_suggested_questions_tool"]
+    Interview["Interview loop\nQ&A — one branch at a time\nSubagent: MCP codebase exploration (haiku)\nsemantic_search · query_graph · get_community"]
     Done{"User: done / enough\nor shared understanding reached"}
     Summary["Build alignment summary\nPROBLEM · DESIRED_STATE · KNOWN_COMPONENTS\nOUT_OF_SCOPE · CONSTRAINTS · KEY_DECISIONS"]
     Save["Save to .planning/grill-TICKET.md"]
@@ -84,7 +85,7 @@ flowchart TD
     Fresh["Tell user: start fresh session\nrun /ticket TICKET-ID"]
     Stop["Notes saved. Run /ticket when ready."]
 
-    Start --> Setup --> Interview --> Done --> Summary --> Save --> Prompt
+    Start --> Setup --> Orient --> Interview --> Done --> Summary --> Save --> Prompt
     Prompt -->|yes| Fresh
     Prompt -->|no| Stop
 ```
@@ -103,7 +104,7 @@ flowchart TD
     subgraph Parallel["Step 2 — Parallel gathering (one message)"]
         S2a["2a: Confluence specs\n(if CONFLUENCE URL found)\nHaiku · Explore"]
         S2b["2b: JAM bug context\n(if JAM URL found)\nHaiku · Explore"]
-        S2c["2c: Codebase query\n(always)\nHaiku · Explore\ngrep-based discovery"]
+        S2c["2c: Codebase query\n(always)\nHaiku · Explore\nMCP semantic + graph search\n(grep only for .tt fallback)"]
         S2cdb["2c-db: DB companion\n(if DB_SIGNAL=yes)\nHaiku · Explore"]
         S2d["2d: Test coverage\n(always)\nHaiku · Explore"]
     end
@@ -168,6 +169,7 @@ flowchart TD
 flowchart TD
     Start["User: /prepr  OR  /prepr fix"]
     S0["Step 0 (main ctx)\nRepo detect · base branch · changed files\nBucket into: perl · sql · tt · js · scss · css"]
+    S05["Step 0.5 — Semantic Risk Assessment (Haiku)\ndetect_changes_tool → risk-score every file\nget_impact_radius_tool → blast radius for high-risk nodes\nOutputs: RISK_TIER · HIGH_RISK_FILES · IMPACT_RADIUS"]
 
     subgraph Checks["Step 1 — Parallel checks (one message)"]
         C1a["1a: Perl review\nperlcritic + OMG layer conventions\nHaiku · Explore"]
@@ -187,7 +189,7 @@ flowchart TD
     Clear["No blockers — run /pr"]
     Blocked["Fix blockers · re-run /prepr"]
 
-    Start --> S0 --> Checks --> S2 --> S3 --> S3b --> Fix
+    Start --> S0 --> S05 --> Checks --> S2 --> S3 --> S3b --> Fix
     Fix -->|yes| S3c --> Out
     Fix -->|no| Out
     Out -->|no| Clear
@@ -209,14 +211,20 @@ flowchart TD
     Rebase["Rebase + push\nUpdate existing PR"]
     S4["Step 4 — Merge conflict check\ngit merge-tree"]
     S5["Step 5 — Generate change summary\ngit diff + approved-plan if present"]
-    S6["Step 6 — Perlcritic report\n(only if Perl files changed)\nHaiku subagent"]
-    S7["Step 7 — Write PR payload\nWrite tool → /tmp/pr_payload.json"]
-    S8["Step 8 — Create draft PR\ncurl -d @/tmp/pr_payload.json\nBitbucket REST v2"]
+
+    subgraph SubAgents["Step 5b — Parallel subagents"]
+        S5risk["Risk assessment (Haiku)\ndetect_changes_tool → RISK_TIER\nget_affected_flows_tool → affected flows"]
+        S6["Perlcritic report\n(only if Perl files changed)\nHaiku subagent"]
+        S5ticket["Ticket fetch (Haiku · Jira MCP)\n(only if TICKET_ID known)"]
+    end
+
+    S7["Step 7 — Synthesise PR body\nTitle · Summary · AC · Changes\n+ Risk Assessment section (if high/medium)"]
+    S8["Step 8 — Write payload + Create draft PR\nWrite tool → /tmp/pr_payload.json\ncurl Bitbucket REST v2"]
     Done["Return PR URL to user"]
 
     Start --> S0 --> S1 --> S2 --> S3 --> ExistPR
     ExistPR -->|yes| Rebase --> Done
-    ExistPR -->|no| S4 --> S5 --> S6 --> S7 --> S8 --> Done
+    ExistPR -->|no| S4 --> S5 --> SubAgents --> S7 --> S8 --> Done
 ```
 
 ---

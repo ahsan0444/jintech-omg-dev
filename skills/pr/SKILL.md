@@ -189,6 +189,41 @@ If no plan file: Changes section will use DIFF_STAT and COMMITS from Step 3.
 
 ---
 
+#### Risk Assessment (always — provides risk tier and affected flows for PR body)
+
+```
+Agent(
+  description="Semantic risk assessment for PR branch",
+  subagent_type="Explore",
+  model="haiku",
+  prompt="""
+  Changed files: <PERL_FILES and all other changed files from Step 3>
+  Repo root: <REPO_ROOT>
+  Tool call budget: 3.
+
+  PHASE 1 — Risk-score changed files:
+    mcp__code-review-graph__detect_changes_tool(changed_files=["<file1>", "<file2>", ...], repo_root="<REPO_ROOT>")
+    If graph absent or tool errors: return RISK_TIER: unknown and stop.
+
+  PHASE 2 — Affected flows (only for high-risk nodes from Phase 1):
+    For the single highest-risk node:
+    mcp__code-review-graph__get_affected_flows_tool(node="<highest risk node>", repo_root="<REPO_ROOT>")
+    → returns execution flows this change participates in.
+
+  Return schema only (no prose):
+
+  RISK_TIER: high | medium | low | unknown
+  HIGH_RISK_FILES:
+    - <file path> — <reason: hub node | bridge node | cross-community>
+  AFFECTED_FLOWS:
+    - <flow name> — <criticality>
+  (omit HIGH_RISK_FILES and AFFECTED_FLOWS if RISK_TIER is low or unknown)
+  """
+)
+```
+
+---
+
 #### Ticket Fetch (only if TICKET_ID is known)
 
 ```
@@ -294,6 +329,15 @@ Build in this exact order. Omit any section entirely (including its heading) if 
 ## Changes
 <completed steps from plan change log, one per line>
 <Definition of Done checklist if present>
+
+---
+
+## Risk Assessment
+**Risk tier: <RISK_TIER from risk assessment subagent>**
+<If high or medium: list HIGH_RISK_FILES with reason>
+<If AFFECTED_FLOWS present: "Affected flows: <flow names>">
+<If low: omit this section entirely>
+<If unknown: omit this section entirely>
 ```
 
 **Acceptance Criteria** must always use checkboxes (`- [ ]`), never plain bullets.
