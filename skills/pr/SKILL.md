@@ -494,50 +494,7 @@ PR description updated.
 
 ---
 
-## Step 9 — Update Jira (if ticket known)
-
-Skip if TICKET_ID = none.
-
-Spawn one subagent to post the PR link and transition the ticket:
-
-```
-Agent(
-  description="Post PR link to Jira and transition to In Review",
-  subagent_type="Explore",
-  model="haiku",
-  prompt="""
-  Update Jira ticket <TICKET_ID> after PR creation.
-
-  Step 1 — Get cloudId:
-    Call mcp__claude_ai_Atlassian__getAccessibleAtlassianResources.
-    Use cloudId from the first resource.
-
-  Step 2 — Post comment:
-    Call mcp__claude_ai_Atlassian__addCommentToJiraIssue with:
-      cloudId: <cloudId>
-      issueIdOrKey: "<TICKET_ID>"
-      body: "PR created: <PR_URL>\nBranch: <CURRENT_BRANCH> → <BASE_BRANCH>"
-
-  Step 3 — Get transitions:
-    Call mcp__claude_ai_Atlassian__getTransitionsForJiraIssue with cloudId and issueIdOrKey.
-    Find transition named "In Review", "Code Review", or closest match.
-    If none found, skip.
-
-  Step 4 — Transition (if found):
-    Call mcp__claude_ai_Atlassian__transitionJiraIssue with cloudId, issueIdOrKey, and transitionId.
-
-  Return ONLY:
-  COMMENT_POSTED: yes | no | error: <reason>
-  TRANSITIONED_TO: <status name> | skipped | error: <reason>
-  """
-)
-```
-
-Append Jira results to Next Up footer. Errors are informational — never block the PR output.
-
----
-
-## Step 10 — Multi-repo Note (conditional)
+## Step 9 — Multi-repo Note (conditional)
 
 If REPO_NAME = omg and the ticket SUMMARY contained DB-related keywords (table, schema, ALTER, migration, stored procedure, postgres):
 
