@@ -186,11 +186,11 @@ Agent(
   Symptom: <SYMPTOM_RAW>
   Tool call budget: 4.
 
-  PHASE 1 (always — 2 calls): mcp__JAM-MCP__getVideoTranscript AND mcp__JAM-MCP__getUserEvents
+  PHASE 1 (always — 2 calls): mcp__Jam__getVideoTranscript AND mcp__Jam__getUserEvents
   If ROOT_CAUSE is identifiable after Phase 1 — STOP.
 
   PHASE 2 (only if ROOT_CAUSE still unclear — 2 calls):
-  mcp__JAM-MCP__getConsoleLogs AND mcp__JAM-MCP__getNetworkRequests
+  mcp__Jam__getConsoleLogs AND mcp__Jam__getNetworkRequests
 
   Return schema only (no prose):
 

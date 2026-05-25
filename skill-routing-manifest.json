@@ -1,0 +1,157 @@
+{
+  "_comment": "Order matters: first high-confidence match wins. Edit ~/.claude/skill-routing-manifest.json to override.",
+  "intents": [
+    {
+      "id": "pr-create",
+      "patterns": ["\\b(create|raise|open|draft)\\s+(a\\s+)?pr\\b"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:pr"}
+    },
+    {
+      "id": "pr-update",
+      "patterns": ["\\bupdate\\b.*\\bpr\\b(?!.*description says)"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:pr"}
+    },
+    {
+      "id": "pr-rebase",
+      "patterns": ["\\brebase\\b.*\\b(pr|branch|onto)\\b"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:pr"}
+    },
+    {
+      "id": "pr-comments-address",
+      "patterns": ["\\b(address|respond to|handle)\\b.*\\b(pr|review)\\s+comments?\\b"],
+      "confidence": "high",
+      "action": {"type": "inline", "file": "~/.claude/procedures/inline/pr-address-comments.md"}
+    },
+    {
+      "id": "pr-comments-fetch",
+      "patterns": [
+        "\\bfetch\\b.*\\b(review|pr)\\s+comments?\\b",
+        "\\bshow\\b.*\\bpr\\b.*\\bcomments?\\b"
+      ],
+      "confidence": "high",
+      "action": {"type": "inline", "file": "~/.claude/procedures/inline/pr-fetch-comments.md"}
+    },
+    {
+      "id": "ticket-investigate",
+      "patterns": ["\\b(investigate|look into|work on|start on)\\b.*\\bticket\\b"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:ticket"}
+    },
+    {
+      "id": "ticket-id-direct",
+      "patterns": ["\\bOMGXI-[0-9]+\\b(?!.*already|.*finished|.*fixed|.*closed)"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:ticket"}
+    },
+    {
+      "id": "ticket-status",
+      "patterns": [
+        "\\b(what'?s|check)\\b.*\\bticket\\b.*\\bstatus\\b",
+        "\\bticket\\b.*\\bstatus\\b"
+      ],
+      "confidence": "high",
+      "action": {"type": "inline", "file": "~/.claude/procedures/inline/ticket-status.md"}
+    },
+    {
+      "id": "ticket-comment",
+      "patterns": ["\\b(add|post)\\b.*\\b(comment|note)\\b.*\\bticket\\b"],
+      "confidence": "high",
+      "action": {"type": "inline", "file": "~/.claude/procedures/inline/ticket-comment.md"}
+    },
+    {
+      "id": "ticket-transition",
+      "patterns": ["\\b(transition|move|set)\\b.*\\bticket\\b.*\\b(in.?progress|done|review|to.?do)\\b"],
+      "confidence": "high",
+      "action": {"type": "inline", "file": "~/.claude/procedures/inline/ticket-transition.md"}
+    },
+    {
+      "id": "implement",
+      "patterns": [
+        "\\bimplement\\b.*\\bplan\\b",
+        "\\b(start|begin)\\b.*\\bimplementing\\b(?!.*don't|.*not yet)"
+      ],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:implement"}
+    },
+    {
+      "id": "prepr",
+      "patterns": [
+        "\\bpre.?pr\\b",
+        "\\b(check|run)\\b.*\\bbefore\\b.*\\bpr\\b"
+      ],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:prepr"}
+    },
+    {
+      "id": "debug",
+      "patterns": [
+        "\\b(debug|diagnose)\\b.*\\bthis\\b",
+        "\\bsomething.?s broken\\b(?!.*was|.*before)"
+      ],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:debug"}
+    },
+    {
+      "id": "grill-me",
+      "patterns": [
+        "\\bgrill\\b.*\\b(me|my|this)\\b",
+        "\\bstress.?test.*plan\\b"
+      ],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:grill-me"}
+    },
+    {
+      "id": "code-review",
+      "patterns": ["\\breview\\b.*\\b(diff|code|branch|changes)\\b"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "code-review"}
+    },
+    {
+      "id": "verify",
+      "patterns": ["\\bverify\\b.*\\b(works?|change|fix|this)\\b(?!.*can you|.*does it)"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "verify"}
+    },
+    {
+      "id": "git-branch-summary",
+      "patterns": [
+        "\\bwhat.?s in\\b.*\\bbranch\\b",
+        "\\bwhat.*changed\\b.*\\bbranch\\b"
+      ],
+      "confidence": "high",
+      "action": {"type": "inline", "file": "~/.claude/procedures/inline/git-branch-summary.md"}
+    },
+    {
+      "id": "session-resume",
+      "patterns": ["\\b(resume|continue|pick up)\\b.*\\b(session|where)\\b"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:resume-session"}
+    },
+    {
+      "id": "session-save",
+      "patterns": ["\\b(save|record)\\b.*\\b(session|progress|where we)\\b"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "jintech-omg-dev:save-session"}
+    },
+    {
+      "id": "commit",
+      "patterns": ["\\b(commit\\b.*\\bthis|write.*commit.*message|make.*commit)\\b(?!.*don't|.*not yet)"],
+      "confidence": "high",
+      "action": {"type": "skill", "skill": "caveman:caveman-commit"}
+    },
+    {
+      "id": "help-skills",
+      "patterns": [
+        "\\bwhat skills\\b",
+        "\\bwhat can you do\\b",
+        "\\blist.*skills\\b",
+        "\\bavailable.*commands\\b"
+      ],
+      "confidence": "low",
+      "action": {"type": "inline", "file": "~/.claude/procedures/inline/help-skills.md"}
+    }
+  ]
+}

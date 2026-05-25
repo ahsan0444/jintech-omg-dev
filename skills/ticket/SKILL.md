@@ -232,15 +232,15 @@ Agent(
 
   Tool call budget: 4 (one per JAM tool). Stop at the earliest phase where ROOT_CAUSE is identifiable.
 
-  PHASE 1 (always — counts as 2 calls): mcp__JAM-MCP__getVideoTranscript AND mcp__JAM-MCP__getUserEvents.
+  PHASE 1 (always — counts as 2 calls): mcp__Jam__getVideoTranscript AND mcp__Jam__getUserEvents.
   If ROOT_CAUSE is identifiable after Phase 1 — STOP. Do not run Phase 2.
 
   PHASE 2 (ONLY if ROOT_CAUSE is still "unclear" after Phase 1 — counts as 2 calls):
-  mcp__JAM-MCP__getConsoleLogs AND mcp__JAM-MCP__getNetworkRequests.
+  mcp__Jam__getConsoleLogs AND mcp__Jam__getNetworkRequests.
 
   PHASE 3 (only if visual state is directly required to identify AFFECTED_COMPONENT — counts as 1 call,
   only run if budget permits and phases 1-2 left AFFECTED_COMPONENT unknown):
-  mcp__JAM-MCP__getScreenshots.
+  mcp__Jam__getScreenshots.
 
   Return schema only (no prose):
 

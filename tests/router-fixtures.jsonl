@@ -1,0 +1,62 @@
+{"prompt": "can you create a PR for this branch", "expected_intent": "pr-create"}
+{"prompt": "raise a PR for the current branch", "expected_intent": "pr-create"}
+{"prompt": "open a PR now please", "expected_intent": "pr-create"}
+{"prompt": "draft a pr for OMGXI-9400", "expected_intent": "pr-create"}
+{"prompt": "update the PR with the latest changes", "expected_intent": "pr-update"}
+{"prompt": "please rebase the PR onto master", "expected_intent": "pr-rebase"}
+{"prompt": "rebase this branch onto main", "expected_intent": "pr-rebase"}
+{"prompt": "address the PR comments from the review", "expected_intent": "pr-comments-address"}
+{"prompt": "respond to the review comments please", "expected_intent": "pr-comments-address"}
+{"prompt": "fetch the review comments for this PR", "expected_intent": "pr-comments-fetch"}
+{"prompt": "show me the PR comments", "expected_intent": "pr-comments-fetch"}
+{"prompt": "investigate the ticket OMGXI-9999", "expected_intent": "ticket-investigate"}
+{"prompt": "look into ticket OMGXI-8800 for me", "expected_intent": "ticket-investigate"}
+{"prompt": "work on ticket OMGXI-7700 now", "expected_intent": "ticket-investigate"}
+{"prompt": "OMGXI-1234 needs investigation", "expected_intent": "ticket-id-direct"}
+{"prompt": "OMGXI-5678 please", "expected_intent": "ticket-id-direct"}
+{"prompt": "what's the ticket status", "expected_intent": "ticket-status"}
+{"prompt": "check ticket status", "expected_intent": "ticket-status"}
+{"prompt": "add a comment to the ticket", "expected_intent": "ticket-comment"}
+{"prompt": "post a note to the ticket please", "expected_intent": "ticket-comment"}
+{"prompt": "transition ticket to in-progress", "expected_intent": "ticket-transition"}
+{"prompt": "move ticket to done", "expected_intent": "ticket-transition"}
+{"prompt": "set ticket to review", "expected_intent": "ticket-transition"}
+{"prompt": "implement the plan now", "expected_intent": "implement"}
+{"prompt": "start implementing the approved plan", "expected_intent": "implement"}
+{"prompt": "run pre-pr checks", "expected_intent": "prepr"}
+{"prompt": "prepr this branch", "expected_intent": "prepr"}
+{"prompt": "check everything before the PR", "expected_intent": "prepr"}
+{"prompt": "debug this failure please", "expected_intent": "debug"}
+{"prompt": "diagnose this issue", "expected_intent": "debug"}
+{"prompt": "grill me on this plan", "expected_intent": "grill-me"}
+{"prompt": "stress-test the plan before I start", "expected_intent": "grill-me"}
+{"prompt": "review the diff carefully", "expected_intent": "code-review"}
+{"prompt": "review this code for bugs", "expected_intent": "code-review"}
+{"prompt": "review the branch changes", "expected_intent": "code-review"}
+{"prompt": "verify the fix works", "expected_intent": "verify"}
+{"prompt": "verify this change", "expected_intent": "verify"}
+{"prompt": "what's in this branch?", "expected_intent": "git-branch-summary"}
+{"prompt": "what changed in the branch", "expected_intent": "git-branch-summary"}
+{"prompt": "resume the session from yesterday", "expected_intent": "session-resume"}
+{"prompt": "continue where we left off", "expected_intent": "session-resume"}
+{"prompt": "pick up the session", "expected_intent": "session-resume"}
+{"prompt": "save the session progress", "expected_intent": "session-save"}
+{"prompt": "record where we are in the session", "expected_intent": "session-save"}
+{"prompt": "commit this change", "expected_intent": "commit"}
+{"prompt": "write a commit message for this", "expected_intent": "commit"}
+{"prompt": "make a commit now", "expected_intent": "commit"}
+{"prompt": "what skills are available", "expected_intent": "help-skills"}
+{"prompt": "what can you do", "expected_intent": "help-skills"}
+{"prompt": "list all skills", "expected_intent": "help-skills"}
+{"prompt": "available commands please", "expected_intent": "help-skills"}
+{"prompt": "the PR description says we need auth changes", "expected_intent": null}
+{"prompt": "OMGXI-1234 is already fixed and closed", "expected_intent": null}
+{"prompt": "OMGXI-5678 is finished", "expected_intent": null}
+{"prompt": "start implementing this not yet please", "expected_intent": null}
+{"prompt": "commit this not yet please", "expected_intent": null}
+{"prompt": "I already made a commit earlier", "expected_intent": null}
+{"prompt": "something was broken before but it's fixed now", "expected_intent": null}
+{"prompt": "the ticket was already transitioned to done", "expected_intent": null}
+{"prompt": "how does the PR workflow work in this project", "expected_intent": null}
+{"prompt": "what does the ticket say about authentication", "expected_intent": null}
+{"prompt": "can you explain what the debug skill does", "expected_intent": null}
