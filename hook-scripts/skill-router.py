@@ -140,6 +140,16 @@ def log_event(prompt, intent_id, action_type):
         pass
 
 
+SLASH_COMMAND_MAP = {
+    "debug": "jintech-omg-dev:debug",
+    "ticket": "jintech-omg-dev:ticket",
+    "implement": "jintech-omg-dev:implement",
+    "prepr": "jintech-omg-dev:prepr",
+    "pr": "jintech-omg-dev:pr",
+    "grill-me": "jintech-omg-dev:grill-me",
+}
+
+
 def main():
     # Stage 0: kill switch
     if os.environ.get("CLAUDE_SKILL_ROUTER_DISABLED"):
@@ -155,8 +165,30 @@ def main():
     if not prompt:
         sys.exit(0)
 
-    # Stage 1: explicit command prefix
-    if prompt.startswith("/") or prompt.startswith("\\"):
+    # Stage 0.5: intercept known slash commands → route to jintech-omg-dev skill variant.
+    # Must run BEFORE Stage 1 exit so /debug, /ticket, etc. get a routing instruction
+    # even though the slash command mechanism already pre-loads the base skill content.
+    if prompt.startswith("/"):
+        slash_match = re.match(r"^/([a-zA-Z0-9_-]+)(.*)", prompt)
+        if slash_match:
+            cmd = slash_match.group(1).lower()
+            args = slash_match.group(2).strip()
+            if cmd in SLASH_COMMAND_MAP:
+                skill_id = SLASH_COMMAND_MAP[cmd]
+                base = skill_base_name(skill_id)
+                out = (
+                    f"⚡ ROUTING ACTIVE: The user's request matches the `{base}` skill.\n"
+                    f"You MUST invoke the Skill tool with skill=\"{skill_id}\" before doing anything else.\n"
+                    f"Do not improvise the steps. The skill defines the exact procedure."
+                )
+                if args:
+                    out += f"\nARGUMENTS: {args}"
+                log_event(prompt, cmd, "skill")
+                sys.stdout.write(out)
+        sys.exit(0)  # Always exit for slash commands — routed or unknown
+
+    # Stage 1: backslash explicit commands
+    if prompt.startswith("\\"):
         sys.exit(0)
 
     try:

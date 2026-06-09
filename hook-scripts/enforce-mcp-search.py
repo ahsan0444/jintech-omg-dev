@@ -91,6 +91,11 @@ tool = data.get('tool_name', '')
 tool_input = data.get('tool_input', {})
 
 BLOCK_MSG = f"""BLOCKED — code-review-graph MCP is available for {project_root}. Use these tools instead of grep:
+
+STEP 1 — Load schemas (MCP tools are deferred; calling without this causes InputValidationError):
+  ToolSearch(query="select:mcp__code-review-graph__semantic_search_nodes_tool,mcp__code-review-graph__query_graph_tool,mcp__code-review-graph__traverse_graph_tool")
+
+STEP 2 — Then call one of:
   mcp__code-review-graph__semantic_search_nodes_tool(query="<term>", repo_root="{project_root}")
     → find functions/classes/files by name or keyword
 
@@ -100,7 +105,9 @@ BLOCK_MSG = f"""BLOCKED — code-review-graph MCP is available for {project_root
   mcp__code-review-graph__traverse_graph_tool(query="<term>", mode="bfs", depth=3, repo_root="{project_root}")
     → BFS/DFS exploration when semantic search returns 0 results
 
-Do NOT fall back to grep. If all MCP searches return 0 results, set CONFIDENCE: low."""
+Do NOT fall back to grep. If all MCP searches return 0 results, set CONFIDENCE: low.
+
+LIMITED SUBAGENT (no ToolSearch/MCP tools available, e.g. cavecrew-investigator): return an empty result with CONFIDENCE: low — do NOT retry with Grep. Ask the parent context to perform MCP search instead."""
 
 # views/ excluded: MCP has no Template Toolkit coverage
 MCP_COVERED = re.compile(r'[/\\](lib|public[/\\]javascripts|t)([/\\]|$)')
