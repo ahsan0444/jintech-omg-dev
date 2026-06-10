@@ -150,47 +150,57 @@ def main():
     if not project_root:
         sys.exit(0)
 
-    # Anchor to the active repo: only block paths that resolve inside it.
-    # Avoids false blocks on e.g. `grep foo /usr/lib/...`.
-    root_real = os.path.realpath(project_root)
-    # All spellings of the repo root we may see in tool input. The /private
-    # variant handles macOS, where realpath('/var/...') = '/private/var/...'
-    # but tool input uses the unresolved alias.
-    root_variants = {project_root.rstrip('/\\'), root_real.rstrip('/\\')}
-    for r in list(root_variants):
-        if r.startswith('/private/'):
-            root_variants.add(r[len('/private'):])
-    covered_in_repo = re.compile(
-        '(' + '|'.join(re.escape(r) for r in root_variants) + ')'
-        + r'[/\\](lib|public[/\\]javascripts|t)([/\\]|\s|$)'
-    )
-    # Relative paths (cwd inside the repo) keep the generic check.
-    cwd_in_repo = os.path.realpath(cwd).startswith(root_real)
+    # Anchor to the active repo via canonical paths: realpath resolves macOS
+    # /var → /private/var aliases and Windows 8.3 short names (RUNNER~1);
+    # normcase folds Windows case and slash direction. Comparing canonical
+    # forms beats enumerating root spellings in a regex — git emits
+    # forward-slash paths on Windows while tempfile/tools emit backslashes,
+    # and the two never regex-match each other.
+    def _canon(p):
+        try:
+            return os.path.normcase(os.path.realpath(p))
+        except Exception:
+            return os.path.normcase(p)
+
+    root_canon = _canon(project_root).rstrip('/\\')
+    cwd_in_repo = _canon(cwd).startswith(root_canon)
+    rel_covered = re.compile(r'^(lib|public[/\\]javascripts|t)([/\\]|$)')
+
+    def covered_rel(rel):
+        return bool(rel_covered.match(rel.lstrip('/\\').replace('\\', '/')))
+
+    def covered_abs(p):
+        c = _canon(os.path.expanduser(p))
+        return c.startswith(root_canon + os.sep) and covered_rel(c[len(root_canon):])
 
     if tool == 'Grep':
         path = tool_input.get('path', '')
-        rp = os.path.realpath(path) if path else ''
-        if (rp.startswith(root_real) and MCP_COVERED.search(rp)) or (
-            cwd_in_repo and not os.path.isabs(path) and MCP_COVERED.search('/' + path)
+        if path and (
+            covered_abs(path)
+            or (cwd_in_repo and not os.path.isabs(path) and covered_rel(path))
         ):
             deny(block_message(project_root))
     elif tool == 'Bash':
         cmd = tool_input.get('command', '')
-        if re.search(r'\bgrep\b', cmd) and (
-            covered_in_repo.search(cmd)
-            or (cwd_in_repo and re.search(r'\bgrep\b.+(^|\s)(lib|public[/\\]javascripts|t)[/\\]', cmd))
-        ):
+        # Collect command tokens that target covered dirs of THIS repo —
+        # absolute tokens via canonical comparison, relative tokens only when
+        # cwd is inside the repo. Avoids false blocks on /usr/lib etc.
+        hits = []
+        for tok in cmd.split():
+            t = tok.strip('\'";,')
+            if not t:
+                continue
+            if re.match(r'^([A-Za-z]:[/\\]|[/\\]|~)', t):
+                if covered_abs(t):
+                    hits.append(t)
+            elif cwd_in_repo and rel_covered.match(t):
+                hits.append(t)
+        if hits:
             # Exemption: every covered-path token names an explicit file (or
             # file glob) with an extension — targeted single-file checks like
             # `grep -n 'bless' lib/foo/dao/foo_db.pm` or `grep -n 'route'
             # lib/OMG*.pm` are allowed; directory sweeps stay blocked.
-            rel_covered = re.compile(r'^(lib|public[/\\]javascripts|t)[/\\]')
-            hits = [
-                t.strip('\'"') for t in cmd.split()
-                if covered_in_repo.search(t.strip('\'"'))
-                or (cwd_in_repo and rel_covered.search(t.strip('\'"')))
-            ]
-            if hits and all(re.search(r'\.\w{1,4}$', t) for t in hits):
+            if all(re.search(r'\.\w{1,4}$', t) for t in hits):
                 sys.exit(0)
             deny(block_message(project_root))
 

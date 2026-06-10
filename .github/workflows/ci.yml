@@ -9,10 +9,7 @@ jobs:
   test:
     strategy:
       matrix:
-        # windows-latest removed: pre-existing path-handling failures in
-        # enforce-mcp-search (Bash branch) and skill-router — see README.
-        # Restore once Windows path normalisation is fixed.
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.12", "3.14"]
     runs-on: ${{ matrix.os }}
     steps:

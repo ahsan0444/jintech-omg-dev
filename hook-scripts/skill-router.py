@@ -17,6 +17,15 @@ import sys
 import threading
 from datetime import datetime, timezone
 
+# Windows: pipe stdout defaults to the locale code page (cp1252), which cannot
+# encode "⚡" — the resulting UnicodeEncodeError would hit the fail-open handler
+# and silently disable all routing. Force UTF-8 everywhere.
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 # Hard timeout — kill the process at 500ms regardless of state.
 def _timeout():
     os._exit(0)

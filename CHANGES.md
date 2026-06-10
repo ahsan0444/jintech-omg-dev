@@ -1,3 +1,18 @@
+# CHANGES — jintech-omg-dev 1.2.1 → 1.2.2 (Windows compatibility)
+
+First-ever CI run (the workflow shipped untracked in v1.2.0) exposed two Windows failures:
+
+### `hook-scripts/skill-router.py` — UTF-8 stdout
+On Windows, pipe stdout defaults to cp1252, which cannot encode "⚡"; the resulting UnicodeEncodeError hit the fail-open handler and silently disabled all routing. stdout is now reconfigured to UTF-8. `tests/test_skill_router.py` decodes subprocess output as UTF-8 explicitly.
+
+### `hook-scripts/enforce-mcp-search.py` — canonical path comparison
+The Bash-branch deny logic regex-matched repo-root spellings against command text. On Windows, git emits forward-slash long paths while tempfile/tools emit backslash and 8.3 short-name (RUNNER~1) variants — the spellings never matched, so directory greps into lib/ were silently allowed. Replaced with canonical comparison (`normcase(realpath(...))`) of individual command tokens; this also subsumes the macOS `/var` → `/private/var` alias hack. Behaviour on Linux/macOS unchanged (all 8 exemption/deny cases re-verified).
+
+### CI
+windows-latest restored to the matrix; README support claim updated.
+
+---
+
 # CHANGES — jintech-omg-dev 1.2.0 → 1.2.1 (perlcritic consolidation + audit fixes)
 
 ## Perlcritic consolidation (single source of truth: the `/perlcritic` skill in the OMG repo)

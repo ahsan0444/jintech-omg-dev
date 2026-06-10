@@ -24,7 +24,7 @@ def run_hook(prompt, env_override=None):
         ["python3", HOOK_PATH],
         input=json.dumps(data),
         capture_output=True,
-        text=True,
+        encoding="utf-8",  # Windows would otherwise decode with cp1252 and mangle "⚡"
         env=env,
         timeout=5,
     )
