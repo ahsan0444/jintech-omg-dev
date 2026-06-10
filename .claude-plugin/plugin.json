@@ -1,7 +1,7 @@
 {
   "name": "jintech-omg-dev",
   "description": "Jintech OMG development toolkit — SDLC skills (/ticket, /implement, /prepr, /pr, /grill-me, /debug) + code-review-graph MCP server + enforcement hooks",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "Jintech Engineering",
     "email": "ahsan.zaheer@jintech.com"

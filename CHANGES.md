@@ -1,3 +1,49 @@
+# CHANGES — jintech-omg-dev 1.2.0 → 1.2.1 (perlcritic consolidation + audit fixes)
+
+## Perlcritic consolidation (single source of truth: the `/perlcritic` skill in the OMG repo)
+
+### `skills/prepr/references/check-prompts.md` — §1a PHASE 1 rewritten
+Replaced the host-binary try-order (`/opt/homebrew/bin/perlcritic` → `perlcritic`, no profile) with the canonical container command: `podman exec omg ... --profile=/var/www/OMG/tools/perl_critic/.perlcriticrc --severity 3 --verbose '%f|%l|%s|%p|%m\n'`. The host binary ran without the project profile, producing a different policy set per machine. Container down now reports `unavailable` instead of silently degrading.
+
+### `skills/pr/SKILL.md` — Perlcritic Check agent rewritten; Step 6 message updated
+Same canonical-command replacement. The "fix and re-run" message now directs the user to `/perlcritic` for the interactive fix loop.
+
+## Audit fixes
+
+### `skills/prepr/SKILL.md` — Step 3b antipatterns path (BLOCKER)
+`$HOME/.claude/projects/-Users-Shared-Code/memory/antipatterns.md` hardcoded this machine's hashed project key — silently wrote nowhere elsewhere. Now `$HOME/.claude/memory/antipatterns.md` with `mkdir -p`.
+
+### `hook-scripts/enforce-mcp-search.py` — single-file grep exemption
+Skill steps (implement Step 2b layer checks, debug Step 2c route greps) instructed greps the hook itself denied. The hook now allows greps scoped to explicit file targets with an extension (`grep -n 'bless' lib/foo/dao/foo_db.pm`, `lib/OMG*.pm`); directory sweeps stay blocked. Block message documents the exception. 4 new tests in `tests/test_hooks.py`.
+
+### `skills/debug/SKILL.md` — Step 2c rewritten
+Route-keyword lookup now uses an explicit-file grep (`lib/OMG*.pm`, permitted under the exemption); controller/helper symbol lookup moved to `semantic_search_nodes_tool` instead of a directory-wide Grep the hook would deny.
+
+### `agents/omg-investigator.md` — grep rule clarified
+"Grep there is hook-blocked" → directory-wide Grep blocked, explicit single-file greps permitted.
+
+### `skills/ticket/SKILL.md` — plan template extracted
+Inline plan template (≈50 lines) moved to `references/plan-template.md`, loaded with one Read before `EnterPlanMode`. File 518 → ~424 lines.
+
+### `agents/omg-investigator.md`, `agents/omg-implementer.md` — duplicate tool names removed
+Bare `mcp__code-review-graph__*` entries dropped from `tools:`; plugin-namespaced `mcp__plugin_jintech-omg-dev_code-review-graph__*` set kept (canonical when the plugin is installed). NOTE: sessions that load code-review-graph only via a repo `.mcp.json`/`enabledMcpjsonServers` (bare namespace) will no longer expose graph tools inside these agents — load the server through the plugin instead.
+
+### `docs/superpowers/` — personal home paths scrubbed
+`/Users/ahsanzaheer/...` → `~` in the skill-router plan and spec docs. Historical `/Users/Shared/Code/...` references in the same docs left as-is (non-executable implementation records).
+
+## OMG-specific tuning (implement + ticket)
+
+### `skills/implement/SKILL.md` — layer rules expanded; new compliance checks
+The OMG LAYER RULES block in the Step 2 implementer prompt now states: dao is the only layer that touches the database (stored functions via `database->prepare('SELECT * FROM <fn>(?, ?)')` + binds — no string-built SQL, no ORM patterns); dom is Moo-based (not Moose/manual bless) with no DB access; controller is route-handlers-only with no business logic and no `database->` calls; plus a Locale::Wolowitz i18n rule (`<% l('key') %>` in TT, JS translation helper, key added to all 7 `locale/default/*.json`). Step 2b gains two checks: `use Moo` in dom files (WARNING if missing) and `database->` in any non-dao .pm (BLOCKER).
+
+### `skills/ticket/SKILL.md` + `references/plan-template.md` — layer-aware plans, locale DoD
+Step 4 synthesis now requires splitting steps along the 4-layer convention and forbids vague "update the database" steps (must name the stored function, the dao caller, and the dbscripts deploy + rollback pair). Plan template's Definition of Done gains a conditional locale-coverage checkbox for user-facing string changes.
+
+### Housekeeping
+`chmod +x hook-scripts/*.py` (consistency with skill-router/enforce-skill-usage); version bump to 1.2.1.
+
+---
+
 # CHANGES — jintech-omg-dev 1.1.0 → 1.2.0 (improved-plugin)
 
 Every change made during the plugin audit, grouped by file, with the reason. Anything not listed below is unchanged from the original.

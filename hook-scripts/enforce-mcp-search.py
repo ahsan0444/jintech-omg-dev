@@ -102,7 +102,8 @@ STEP 2 — Then call one of:
   mcp__code-review-graph__traverse_graph_tool(query="<term>", mode="bfs", depth=3, repo_root="{project_root}")
     → BFS/DFS exploration when semantic search returns 0 results
 
-Do NOT fall back to grep. If all MCP searches return 0 results, set CONFIDENCE: low.
+Do NOT fall back to directory-wide grep. If all MCP searches return 0 results, set CONFIDENCE: low.
+Exception: grep scoped to ONE explicit file (path ending in a filename with extension) is permitted.
 
 LIMITED SUBAGENT (no ToolSearch/MCP tools available, e.g. cavecrew-investigator): return an empty result with CONFIDENCE: low — do NOT retry with Grep. Ask the parent context to perform MCP search instead."""
 
@@ -132,6 +133,10 @@ def main():
     if tool == 'Grep':
         candidate = tool_input.get('path', '')
         if not MCP_COVERED.search(candidate):
+            sys.exit(0)
+        # Exemption: Grep scoped to a single existing file is a targeted
+        # inspection (e.g. layer-convention checks), not a codebase search.
+        if candidate and os.path.isfile(os.path.realpath(os.path.expanduser(candidate))):
             sys.exit(0)
     elif tool == 'Bash':
         candidate = tool_input.get('command', '')
@@ -175,6 +180,18 @@ def main():
             covered_in_repo.search(cmd)
             or (cwd_in_repo and re.search(r'\bgrep\b.+(^|\s)(lib|public[/\\]javascripts|t)[/\\]', cmd))
         ):
+            # Exemption: every covered-path token names an explicit file (or
+            # file glob) with an extension — targeted single-file checks like
+            # `grep -n 'bless' lib/foo/dao/foo_db.pm` or `grep -n 'route'
+            # lib/OMG*.pm` are allowed; directory sweeps stay blocked.
+            rel_covered = re.compile(r'^(lib|public[/\\]javascripts|t)[/\\]')
+            hits = [
+                t.strip('\'"') for t in cmd.split()
+                if covered_in_repo.search(t.strip('\'"'))
+                or (cwd_in_repo and rel_covered.search(t.strip('\'"')))
+            ]
+            if hits and all(re.search(r'\.\w{1,4}$', t) for t in hits):
+                sys.exit(0)
             deny(block_message(project_root))
 
     sys.exit(0)

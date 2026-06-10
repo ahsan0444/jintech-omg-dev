@@ -152,6 +152,51 @@ class TestEnforceMcpSearch(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(out, "")
 
+    def test_bash_grep_single_file_allowed(self):
+        # Targeted single-file checks (e.g. layer-convention greps) are exempt.
+        target = os.path.join(self.repo, "lib", "foo_db.pm")
+        with open(target, "w") as f:
+            f.write("package foo_db;\n1;\n")
+        out, rc = run_hook("enforce-mcp-search", {
+            "tool_name": "Bash",
+            "tool_input": {"command": f"grep -n 'bless' {target}"},
+            "cwd": self.repo,
+        }, cwd=self.repo)
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "")
+
+    def test_bash_grep_file_glob_allowed(self):
+        # Explicit file globs with an extension (route files) are exempt.
+        out, rc = run_hook("enforce-mcp-search", {
+            "tool_name": "Bash",
+            "tool_input": {"command": "grep -n 'route' lib/OMG*.pm"},
+            "cwd": self.repo,
+        }, cwd=self.repo)
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "")
+
+    def test_grep_tool_single_file_allowed(self):
+        target = os.path.join(self.repo, "lib", "foo_helper.pm")
+        with open(target, "w") as f:
+            f.write("package foo_helper;\n1;\n")
+        out, rc = run_hook("enforce-mcp-search", {
+            "tool_name": "Grep",
+            "tool_input": {"path": target, "pattern": "_controller->"},
+            "cwd": self.repo,
+        }, cwd=self.repo)
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, "")
+
+    def test_bash_grep_mixed_file_and_dir_denied(self):
+        # A directory anywhere in the targets keeps the block.
+        out, rc = run_hook("enforce-mcp-search", {
+            "tool_name": "Bash",
+            "tool_input": {"command": f"grep -n foo {self.repo}/lib/foo.pm {self.repo}/lib/"},
+            "cwd": self.repo,
+        }, cwd=self.repo)
+        self.assertEqual(rc, 0)
+        self.assertEqual(parse_deny(out)["permissionDecision"], "deny")
+
 
 if __name__ == "__main__":
     unittest.main()

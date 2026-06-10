@@ -263,10 +263,16 @@ Agent(
   prompt="""
   Changed Perl files: <PERL_FILES>
 
-  For each file that still exists on disk, run perlcritic at severity 3:
-    Try /opt/homebrew/bin/perlcritic --severity 3 <file> first, then perlcritic --severity 3 <file>.
+  Canonical perlcritic command (single source of truth is the /perlcritic skill
+  in the OMG repo; keep this block in sync with it):
+    Map each local path to its container path: <REPO_ROOT>/lib/... → /var/www/OMG/lib/...
     Skip files that no longer exist on disk.
-    If neither binary is found: PERLCRITIC_AVAILABLE: no
+    Run once for all remaining files:
+      Bash("podman exec omg bash -c \"perlcritic --profile=/var/www/OMG/tools/perl_critic/.perlcriticrc --severity 3 --verbose '%f|%l|%s|%p|%m\\n' <CONTAINER_PATHS>\"")
+    Output is one violation per line: file|line|severity|Policy::Name|message.
+    Non-zero exit with output = violations found, not an error.
+    If `podman exec omg true` fails: PERLCRITIC_AVAILABLE: no (container down).
+    Never fall back to a host perlcritic binary — no project profile, different results.
 
   Return ONLY the schema below. No prose, no preamble.
 
@@ -292,7 +298,7 @@ After subagents return, if VIOLATIONS is not "none" and PERLCRITIC_AVAILABLE = y
 These would be flagged as blockers by /prepr. Create the PR anyway? (yes / no)
 ```
 
-- **no** → stop. *"Fix the violations and re-run /pr."*
+- **no** → stop. *"Run /perlcritic to work through the violations, then re-run /pr."*
 - **yes** → proceed. Violations will be included in the PR body.
 
 ---

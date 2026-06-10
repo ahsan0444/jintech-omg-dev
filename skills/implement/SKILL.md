@@ -139,10 +139,27 @@ Agent(
   <replacement from plan>
 
   OMG LAYER RULES (pull these when your file matches):
-  - dao (*_db.pm): return unblessed hashes/arrays only — no bless(), no ->new() in returns
-  - dom (*_dom.pm): must have sub TO_JSON { return { %{ shift() } }; }
-  - helper (*_helper.pm): sole public API for this module — no foreign _controller-> calls, no foreign _db-> calls
-  - controller (*_controller.pm): calls helpers only — no foreign _controller-> calls, no direct _db imports
+  - dao (lib/<area>/dao/*_db.pm): the ONLY layer that touches the database.
+    Returns unblessed hashes/arrays only — no bless(), no ->new() in returns.
+    All DB access goes through PostgreSQL stored functions with bound params:
+    database->prepare('SELECT * FROM <function_name>(?, ?)') + execute(@binds).
+    Never build SQL by string interpolation. There is no ORM — no DBIC, no
+    Rose::DB; never write ->create/->find/->update style calls.
+  - dom (lib/<area>/dom/*_dom.pm): Moo-based domain object (use Moo — not Moose,
+    not hand-rolled bless). Must have sub TO_JSON { return { %{ shift() } }; }.
+    No DB access in this layer.
+  - helper (*_helper.pm): business logic; orchestrates dao + dom. Sole public API
+    for this module — no foreign _controller-> calls, no foreign _db-> calls, and
+    no direct database-> calls (DB access is the dao's job).
+  - controller (*_controller.pm): Dancer2 route handlers only — calls helpers and
+    renders/returns. No business logic, no database-> calls, no foreign
+    _controller-> calls, no direct _db imports.
+  - i18n (when the edit adds or changes a user-facing string in a .tt template or
+    JS file): use the Locale::Wolowitz helper — `<% l('key_name') %>` in TT, the
+    JS translation helper in JS (`OMG.l('key_name')` / `localText.<key>` — match
+    the surrounding code's form). Add the key to ALL locale files:
+    locale/default/en.json, es.json, fr.json, ja.json, pt.json, pt-br.json,
+    zh-cn.json. Never hardcode display text.
 
   INSTRUCTIONS:
   1. Grep for the unique string to find the exact current line number
@@ -252,6 +269,8 @@ Agent(
   Files in lib/*/dom/ (*_dom.pm):
     Bash("grep -n 'sub TO_JSON' <file>")
     BLOCKER if missing: dom must have TO_JSON method.
+    Bash("grep -n 'use Moo' <file>")
+    WARNING if missing: dom objects are Moo-based (not Moose, not manual bless).
 
   Files in lib/*/*_helper.pm:
     Bash("grep -n '_controller->' <file>")
@@ -260,6 +279,10 @@ Agent(
   Files in lib/*/*_controller.pm:
     Bash("grep -n 'use.*_db;' <file>")
     WARNING if found: controller importing DAO directly.
+
+  All .pm files NOT in lib/*/dao/:
+    Bash("grep -n 'database->' <file>")
+    BLOCKER if found: DB access belongs only in the dao layer.
 
   All .pm files:
     Bash("perl -c <file> 2>&1")

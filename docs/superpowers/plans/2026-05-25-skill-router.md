@@ -1235,14 +1235,14 @@ Expected: 7 `.md` files listed.
 
 - [ ] **Step 8.2: Add skill-router hook to global settings.json**
 
-Open `/Users/ahsanzaheer/.claude/settings.json`. In the `hooks.UserPromptSubmit` array, add after the `caveman-mode-tracker` entry:
+Open `~/.claude/settings.json`. In the `hooks.UserPromptSubmit` array, add after the `caveman-mode-tracker` entry:
 
 ```json
 {
   "hooks": [
     {
       "type": "command",
-      "command": "\"/opt/homebrew/Cellar/node/25.8.2/bin/node\" \"/Users/ahsanzaheer/.claude/hooks/caveman-mode-tracker.js\"",
+      "command": "\"/opt/homebrew/Cellar/node/25.8.2/bin/node\" \"~/.claude/hooks/caveman-mode-tracker.js\"",
       "timeout": 5,
       "statusMessage": "Tracking caveman mode..."
     },
@@ -1259,7 +1259,7 @@ Open `/Users/ahsanzaheer/.claude/settings.json`. In the `hooks.UserPromptSubmit`
 - [ ] **Step 8.3: Validate global settings.json is valid JSON**
 
 ```bash
-python3 -c "import json; json.load(open('/Users/ahsanzaheer/.claude/settings.json')); print('valid')"
+python3 -c "import json; json.load(open('~/.claude/settings.json')); print('valid')"
 ```
 
 Expected: `valid`
@@ -1308,8 +1308,8 @@ Wait for confirmation that the plugin updated successfully.
 - [ ] **Step 9.3: Verify JAM fixes in cache**
 
 ```bash
-grep -c "JAM-MCP" /Users/ahsanzaheer/.claude/plugins/cache/jintech-claude-marketplace/jintech-omg-dev/*/skills/ticket/SKILL.md
-grep -c "JAM-MCP" /Users/ahsanzaheer/.claude/plugins/cache/jintech-claude-marketplace/jintech-omg-dev/*/skills/debug/SKILL.md
+grep -c "JAM-MCP" ~/.claude/plugins/cache/jintech-claude-marketplace/jintech-omg-dev/*/skills/ticket/SKILL.md
+grep -c "JAM-MCP" ~/.claude/plugins/cache/jintech-claude-marketplace/jintech-omg-dev/*/skills/debug/SKILL.md
 ```
 
 Expected: both return `0`.
@@ -1319,7 +1319,7 @@ Expected: both return `0`.
 ```bash
 python3 -c "
 import json, glob
-files = glob.glob('/Users/ahsanzaheer/.claude/plugins/cache/jintech-claude-marketplace/jintech-omg-dev/*/settings.json')
+files = glob.glob('~/.claude/plugins/cache/jintech-claude-marketplace/jintech-omg-dev/*/settings.json')
 d = json.load(open(files[0]))
 mcp = [x for x in d['permissions']['allow'] if x.startswith('mcp__')]
 print(f'{len(mcp)} MCP permissions')

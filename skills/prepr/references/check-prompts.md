@@ -33,11 +33,17 @@ Agent(
 
     If graph absent or any tool errors: skip Phase 0 silently and continue.
 
-  PHASE 1 — Perl::Critic (run for each file):
-    Try in order until one works:
-      /opt/homebrew/bin/perlcritic --severity 3 <file_path>
-      perlcritic --severity 3 <file_path>
-    If neither works: report perlcritic: unavailable and skip.
+  PHASE 1 — Perl::Critic (canonical command — single source of truth is the
+  /perlcritic skill in the OMG repo; keep this block in sync with it):
+    Map each local path to its container path:
+      <REPO_ROOT>/lib/... → /var/www/OMG/lib/...
+    Run once for all files (skip files that no longer exist on disk):
+      Bash("podman exec omg bash -c \"perlcritic --profile=/var/www/OMG/tools/perl_critic/.perlcriticrc --severity 3 --verbose '%f|%l|%s|%p|%m\\n' <CONTAINER_PATHS>\"")
+    Output is one violation per line: file|line|severity|Policy::Name|message.
+    Non-zero exit with output = violations found, not an error.
+    If `podman exec omg true` fails: report PERLCRITIC: unavailable (container down) and skip.
+    Never fall back to a host perlcritic binary — it lacks the project profile and
+    produces different results.
 
   PHASE 2 — OMG Layer Conventions (grep-based, run for each file):
 

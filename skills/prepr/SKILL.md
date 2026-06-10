@@ -246,8 +246,9 @@ If clean:
 Run directly in main context for each BLOCKER:
 
 ```bash
-ANTIPATTERNS="$HOME/.claude/projects/-Users-Shared-Code/memory/antipatterns.md"
+ANTIPATTERNS="$HOME/.claude/memory/antipatterns.md"
 DATE=$(date -u +"%Y-%m-%d")
+mkdir -p "$(dirname "$ANTIPATTERNS")"
 
 if [ ! -f "$ANTIPATTERNS" ]; then
   printf "# Antipatterns\n\nAuto-captured BLOCK findings from /prepr runs.\n\n" > "$ANTIPATTERNS"

@@ -224,8 +224,10 @@ Agent(
   HARD RULES: no file reads, no full-file greps, no find-then-read. Paths and line ranges only.
 
   PHASE 1 — Route and controller (2 calls):
-    Grep(pattern="<route keyword from symptom>", path="<REPO_ROOT>/lib", glob="OMG*.pm")
-    Grep(pattern="<controller or helper name>", path="<REPO_ROOT>/lib", type="perl")
+    Bash("grep -n '<route keyword from symptom>' <REPO_ROOT>/lib/OMG*.pm")
+      (explicit-file grep — permitted; route paths are strings the graph does not index)
+    mcp__code-review-graph__semantic_search_nodes_tool(query="<controller or helper name>", repo_root="<REPO_ROOT>")
+      (directory-wide Grep into lib/ is hook-blocked — use MCP for symbol lookups)
 
   PHASE 2 — DB function if relevant (2 calls, only if query/data issue):
     Bash("psql -t -A -c \"SELECT proname, pg_get_function_arguments(oid) FROM pg_proc WHERE proname ILIKE '%<entity>%' ORDER BY proname\" 2>/dev/null")
