@@ -1,5 +1,8 @@
 # jintech-omg-dev
 
+[![CI](https://github.com/ahsan0444/jintech-omg-dev/actions/workflows/ci.yml/badge.svg)](https://github.com/ahsan0444/jintech-omg-dev/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/ahsan0444/jintech-omg-dev)](https://github.com/ahsan0444/jintech-omg-dev/releases)
+
 Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipeline, the code-review-graph MCP server, and enforcement hooks into a single installable unit.
 
 **Supports macOS, Linux, and Windows** (CI-tested on ubuntu and windows).
