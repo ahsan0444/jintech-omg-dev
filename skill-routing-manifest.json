@@ -1,5 +1,5 @@
 {
-  "_comment": "Order matters: first high-confidence match wins. Edit ~/.claude/skill-routing-manifest.json to override.",
+  "_comment": "Order matters: first high-confidence match wins. Override per-user by copying to ~/.claude/skill-routing-manifest.json or via SKILL_ROUTER_MANIFEST_OVERRIDE. Inline files resolve relative to ${CLAUDE_PLUGIN_ROOT}; absolute and ~ paths are honoured as user overrides.",
   "intents": [
     {
       "id": "pr-create",
@@ -23,7 +23,7 @@
       "id": "pr-comments-address",
       "patterns": ["\\b(address|respond to|handle)\\b.*\\b(pr|review)\\s+comments?\\b"],
       "confidence": "high",
-      "action": {"type": "inline", "file": "~/.claude/procedures/inline/pr-address-comments.md"}
+      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/pr-address-comments.md"}
     },
     {
       "id": "pr-comments-fetch",
@@ -32,7 +32,7 @@
         "\\bshow\\b.*\\bpr\\b.*\\bcomments?\\b"
       ],
       "confidence": "high",
-      "action": {"type": "inline", "file": "~/.claude/procedures/inline/pr-fetch-comments.md"}
+      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/pr-fetch-comments.md"}
     },
     {
       "id": "ticket-investigate",
@@ -43,7 +43,7 @@
     {
       "id": "ticket-id-direct",
       "patterns": ["\\bOMGXI-[0-9]+\\b(?!.*already|.*finished|.*fixed|.*closed)"],
-      "confidence": "high",
+      "confidence": "low",
       "action": {"type": "skill", "skill": "jintech-omg-dev:ticket"}
     },
     {
@@ -53,19 +53,19 @@
         "\\bticket\\b.*\\bstatus\\b"
       ],
       "confidence": "high",
-      "action": {"type": "inline", "file": "~/.claude/procedures/inline/ticket-status.md"}
+      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/ticket-status.md"}
     },
     {
       "id": "ticket-comment",
       "patterns": ["\\b(add|post)\\b.*\\b(comment|note)\\b.*\\bticket\\b"],
       "confidence": "high",
-      "action": {"type": "inline", "file": "~/.claude/procedures/inline/ticket-comment.md"}
+      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/ticket-comment.md"}
     },
     {
       "id": "ticket-transition",
       "patterns": ["\\b(transition|move|set)\\b.*\\bticket\\b.*\\b(in.?progress|done|review|to.?do)\\b"],
       "confidence": "high",
-      "action": {"type": "inline", "file": "~/.claude/procedures/inline/ticket-transition.md"}
+      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/ticket-transition.md"}
     },
     {
       "id": "implement",
@@ -79,8 +79,10 @@
     {
       "id": "prepr",
       "patterns": [
-        "\\bpre.?pr\\b",
-        "\\b(check|run)\\b.*\\bbefore\\b.*\\bpr\\b"
+        "^\\s*pre.?pr\\b",
+        "\\b(run|do|start)\\s+(the\\s+)?pre.?pr\\b",
+        "\\bpre.?pr\\s+(checks?|audit|review)\\b",
+        "\\b(check|audit)\\b.*\\bbefore\\b.*\\b(the\\s+|a\\s+)?pr\\b"
       ],
       "confidence": "high",
       "action": {"type": "skill", "skill": "jintech-omg-dev:prepr"}
@@ -122,7 +124,7 @@
         "\\bwhat.*changed\\b.*\\bbranch\\b"
       ],
       "confidence": "high",
-      "action": {"type": "inline", "file": "~/.claude/procedures/inline/git-branch-summary.md"}
+      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/git-branch-summary.md"}
     },
     {
       "id": "session-resume",
@@ -151,7 +153,7 @@
         "\\bavailable.*commands\\b"
       ],
       "confidence": "low",
-      "action": {"type": "inline", "file": "~/.claude/procedures/inline/help-skills.md"}
+      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/help-skills.md"}
     }
   ]
 }

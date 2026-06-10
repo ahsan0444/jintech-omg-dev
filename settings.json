@@ -1,17 +1,5 @@
 {
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"/Users/Shared/Code/jintech-omg-dev/hook-scripts/enforce-skill-usage.py\""
-          }
-        ]
-      }
-    ]
-  },
+  "_comment": "TEMPLATE — Claude Code does not load a settings.json shipped inside a plugin. Copy the permissions block below into your project's .claude/settings.json (or merge with /permissions). Hooks are NOT listed here: all plugin hooks are registered automatically via hooks/hooks.json.",
   "permissions": {
     "allow": [
       "WebFetch(domain:raw.githubusercontent.com)",
@@ -55,17 +43,31 @@
       "mcp__code-review-graph__get_community_tool",
       "mcp__code-review-graph__get_suggested_questions_tool",
       "mcp__code-review-graph__get_flow_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__query_graph_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__traverse_graph_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__get_architecture_overview_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__get_impact_radius_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__detect_changes_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__get_affected_flows_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__get_review_context_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__find_large_functions_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__get_knowledge_gaps_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__cross_repo_search_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__get_community_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__get_suggested_questions_tool",
+      "mcp__plugin_jintech-omg-dev_code-review-graph__get_flow_tool",
       "mcp__Jam__getVideoTranscript",
       "mcp__Jam__getUserEvents",
       "mcp__Jam__getConsoleLogs",
       "mcp__Jam__getNetworkRequests",
       "mcp__Jam__getScreenshots",
-      "mcp__claude_ai_Atlassian__getJiraIssue",
-      "mcp__claude_ai_Atlassian__getAccessibleAtlassianResources",
-      "mcp__claude_ai_Atlassian__addCommentToJiraIssue",
-      "mcp__claude_ai_Atlassian__getTransitionsForJiraIssue",
-      "mcp__claude_ai_Atlassian__transitionJiraIssue",
-      "mcp__claude_ai_Atlassian__getConfluencePage"
+      "mcp__plugin_atlassian_atlassian__getJiraIssue",
+      "mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources",
+      "mcp__plugin_atlassian_atlassian__addCommentToJiraIssue",
+      "mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue",
+      "mcp__plugin_atlassian_atlassian__transitionJiraIssue",
+      "mcp__plugin_atlassian_atlassian__getConfluencePage"
     ]
   }
 }

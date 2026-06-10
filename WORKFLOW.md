@@ -256,9 +256,12 @@ flowchart LR
     end
 
     subgraph Memory["~/.claude/projects/.../memory/"]
-        SL["session-log.md\nauto-written by Stop hook\nbranch · tickets · plan-saves"]
         AM["antipatterns.md\nauto-appended by /prepr\nBLOCKER patterns"]
         RM["MEMORY.md\nindex of all memory files"]
+    end
+
+    subgraph Sessions["~/.claude/session-data/"]
+        SS["YYYY-MM-DD-id-session.tmp\nwritten by /save-session\nread by /resume-session"]
     end
 
     subgraph Context["CLAUDE.md (project root)"]

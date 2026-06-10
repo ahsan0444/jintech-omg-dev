@@ -1,7 +1,6 @@
 ---
 name: pr
 description: Creates a Bitbucket draft PR from the current branch using the Bitbucket REST API. Fetches Jira ticket content, generates a Perl critic report when Perl files changed, and derives a change summary from the implementation plan or git diff. If a PR already exists, rebases off the destination branch and pushes.
-trigger: /pr
 ---
 
 # /pr
@@ -23,19 +22,21 @@ You are the PR Orchestrator. You create a well-formed Bitbucket draft PR from th
 - **Always confirm destination branch first** — ask in Step 2, then immediately check for an existing PR before any diff/conflict work.
 - **Warn on merge conflicts** before creating the PR (Step 4).
 - **Warn on perlcritic violations** before creating the PR (Step 6).
-- **JSON safety:** Never pipe shell variables through `jq -n --arg` — Unicode in titles/descriptions causes parse errors. Always use the **Write tool** to write the JSON payload to `/tmp/pr_payload.json`, then `curl -d @/tmp/pr_payload.json`.
+- **JSON safety:** Never pipe shell variables through `jq -n --arg` — Unicode in titles/descriptions causes parse errors. Always use the **Write tool** to write the JSON payload to `/tmp/pr_payload.json`, then `curl -d @/tmp/pr_payload.json`. (Windows: Git Bash maps `/tmp` automatically — if the Write tool cannot create `/tmp/...`, use `<REPO_ROOT>/.planning/pr_payload.json` for both the Write and the `-d @` path instead.)
 - **One repo at a time.** For multi-repo tickets (e.g. omg + omg_db), the user runs /pr separately from each repo.
-- **Auth:** All curl calls use `-u "$BITBUCKET_USER:$BITBUCKET_TOKEN"` (Basic auth).
+- **Auth:** Never put credentials in curl argv (`-u` / `-H` are visible in `ps`). All curl calls pipe a config stanza via stdin: `printf 'user = "%s:%s"\n' "$BITBUCKET_USER" "$BITBUCKET_TOKEN" | curl -s -K - ...`
 
 ---
 
 ## Repo → Bitbucket Slug Mapping
 
-| REPO_NAME  | repo_slug | workspace |
+Workspace = `$OMG_BITBUCKET_WORKSPACE` (default `zlalani`) — set once in Step 1 as `BB_WORKSPACE`.
+
+| REPO_NAME  | repo_slug | platform |
 |---|---|---|
-| omg        | omg       | zlalani   |
-| omg_db     | omg_db    | zlalani   |
-| omg_ice    | omg_ice   | zlalani   |
+| omg        | omg       | Bitbucket |
+| omg_db     | omg_db    | Bitbucket |
+| omg_ice    | omg_ice   | Bitbucket |
 | omg-docker | —         | GitLab — skip |
 
 ---
@@ -48,6 +49,7 @@ Run directly in main context:
 REPO_ROOT=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null)
 REPO_NAME=$(basename "$REPO_ROOT" 2>/dev/null)
 CURRENT_BRANCH=$(git -C "$REPO_ROOT" branch --show-current 2>/dev/null)
+BB_WORKSPACE="${OMG_BITBUCKET_WORKSPACE:-zlalani}"   # single source — override via env
 
 # Check for plan file and extract ticket ID / base branch from it
 PLAN_FILE=$(ls "$REPO_ROOT/.planning/approved-plan-"*.md 2>/dev/null | head -1)
@@ -102,10 +104,9 @@ Wait for user response.
 Record BASE_BRANCH. **Immediately** run the PR lookup in the same step:
 
 ```bash
-PR_CHECK=$(curl -s \
-  -u "$BITBUCKET_USER:$BITBUCKET_TOKEN" \
-  "https://api.bitbucket.org/2.0/repositories/zlalani/${REPO_NAME}/pullrequests?q=source.branch.name%3D%22${CURRENT_BRANCH}%22")
-PR_URL_EXISTING=$(echo "$PR_CHECK" | grep -o "https://bitbucket.org/zlalani/${REPO_NAME}/pull-requests/[0-9]*" | head -1)
+PR_CHECK=$(printf 'user = "%s:%s"\n' "$BITBUCKET_USER" "$BITBUCKET_TOKEN" | curl -s -K - \
+  "https://api.bitbucket.org/2.0/repositories/${BB_WORKSPACE}/${REPO_NAME}/pullrequests?q=source.branch.name%3D%22${CURRENT_BRANCH}%22")
+PR_URL_EXISTING=$(echo "$PR_CHECK" | grep -o "https://bitbucket.org/${BB_WORKSPACE}/${REPO_NAME}/pull-requests/[0-9]*" | head -1)
 PR_EXISTS=$([ -n "$PR_URL_EXISTING" ] && echo "yes" || echo "no")
 
 echo "PR_EXISTS=$PR_EXISTS | PR_URL=$PR_URL_EXISTING"
@@ -194,7 +195,7 @@ If no plan file: Changes section will use DIFF_STAT and COMMITS from Step 3.
 ```
 Agent(
   description="Semantic risk assessment for PR branch",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Changed files: <PERL_FILES and all other changed files from Step 3>
@@ -233,8 +234,9 @@ Agent(
   model="haiku",
   prompt="""
   Fetch Jira ticket <TICKET_ID>.
-  First call mcp__claude_ai_Atlassian__getAccessibleAtlassianResources to get the cloudId.
-  Then call mcp__claude_ai_Atlassian__getJiraIssue with that cloudId and issueIdOrKey="<TICKET_ID>".
+  TOOL DISCOVERY: Atlassian MCP tool names vary by install (mcp__plugin_atlassian_atlassian__*, mcp__claude_ai_Atlassian__*, or mcp__atlassian__*). If a call fails with unknown tool, run ToolSearch(query="+jira <tool name>") and use the returned variant. Names below use the mcp__plugin_atlassian_atlassian__ prefix.
+  First call mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources to get the cloudId.
+  Then call mcp__plugin_atlassian_atlassian__getJiraIssue with that cloudId and issueIdOrKey="<TICKET_ID>".
   Do not retry more than once. If it fails return ERROR: <reason>.
 
   Return ONLY the schema below. No prose, no preamble.
@@ -256,7 +258,7 @@ Agent(
 ```
 Agent(
   description="Perlcritic check on changed Perl files",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Changed Perl files: <PERL_FILES>
@@ -394,11 +396,10 @@ Structure to write:
 Then run in main context:
 
 ```bash
-curl -s -X POST \
-  -u "$BITBUCKET_USER:$BITBUCKET_TOKEN" \
+printf 'user = "%s:%s"\n' "$BITBUCKET_USER" "$BITBUCKET_TOKEN" | curl -s -K - -X POST \
   -H "Content-Type: application/json" \
   -d @/tmp/pr_payload.json \
-  "https://api.bitbucket.org/2.0/repositories/zlalani/<REPO_NAME>/pullrequests" \
+  "https://api.bitbucket.org/2.0/repositories/${BB_WORKSPACE}/<REPO_NAME>/pullrequests" \
   -o /tmp/pr_response.json -w "HTTP_STATUS:%{http_code}\n"
 
 python3 -c "
@@ -419,78 +420,7 @@ If ERROR returned: surface the error to the user and stop.
 
 ### If PR_EXISTS = yes
 
-First extract the PR ID and destination branch from the existing PR URL and API response:
-
-```bash
-PR_ID=$(echo "$PR_URL_EXISTING" | grep -o '[0-9]*$')
-PR_DEST_BRANCH=$(curl -s \
-  -u "$BITBUCKET_USER:$BITBUCKET_TOKEN" \
-  "https://api.bitbucket.org/2.0/repositories/zlalani/${REPO_NAME}/pullrequests/${PR_ID}" \
-  | grep -o '"destination":{[^}]*"name":"[^"]*"' | grep -o '"name":"[^"]*"' | tail -1 | sed 's/"name":"//;s/"//')
-```
-
-**Check if rebase is needed:**
-
-```bash
-git -C "$REPO_ROOT" fetch origin
-git -C "$REPO_ROOT" merge-base --is-ancestor origin/<PR_DEST_BRANCH> HEAD
-echo "REBASE_NEEDED=$?"
-```
-
-`REBASE_NEEDED=0` → already up to date — skip rebase, go straight to description update.
-`REBASE_NEEDED=1` → destination has moved ahead — rebase required.
-
-**If rebase required:**
-
-```bash
-git -C "$REPO_ROOT" rebase origin/<PR_DEST_BRANCH>
-```
-
-If rebase fails:
-```bash
-git -C "$REPO_ROOT" diff --name-only --diff-filter=U
-```
-Output:
-```
-Rebase conflict in the following files:
-  <conflicting files>
-
-Resolve conflicts, then:
-  git add <file>
-  git rebase --continue
-  git push --force-with-lease
-
-Re-run /pr after pushing to update the PR description.
-```
-Stop.
-
-If rebase succeeds:
-```bash
-git -C "$REPO_ROOT" push --force-with-lease
-```
-
-**Update PR description** — use the **Write tool** to write `/tmp/pr_update.json`:
-```json
-{"description": "<PR_BODY>"}
-```
-
-Then:
-```bash
-curl -s -X PUT \
-  -u "$BITBUCKET_USER:$BITBUCKET_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d @/tmp/pr_update.json \
-  "https://api.bitbucket.org/2.0/repositories/zlalani/<REPO_NAME>/pullrequests/<PR_ID>" \
-  -o /tmp/pr_update_response.json -w "HTTP_STATUS:%{http_code}\n"
-```
-
-Output:
-```
-PR already exists: <PR_URL>
-<if rebase ran>  Rebased onto origin/<PR_DEST_BRANCH> and pushed.
-<if skipped>     Branch already up to date — no rebase needed.
-PR description updated.
-```
+Read `references/update-existing-pr.md` and follow it exactly: extract PR_ID, check whether rebase is needed (`merge-base --is-ancestor`), rebase + `push --force-with-lease` if so, then PUT the updated description.
 
 ---
 
@@ -498,7 +428,7 @@ PR description updated.
 
 If REPO_NAME = omg and the ticket SUMMARY contained DB-related keywords (table, schema, ALTER, migration, stored procedure, postgres):
 
-> *"If this ticket also touches omg_db, cd into /Users/Shared/Code/omg_db and run /pr to create a companion PR."*
+> *"If this ticket also touches omg_db, cd into <WS_ROOT>/omg_db and run /pr to create a companion PR."*
 
 ---
 

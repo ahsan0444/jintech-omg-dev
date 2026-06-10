@@ -80,6 +80,7 @@ MCP tools:
 ```
 
 Repo detection falls back through this list in order if `git rev-parse` fails from cwd.
+The parent dir is `$OMG_WORKSPACE_ROOT` (default `/Users/Shared/Code`); the Bitbucket workspace slug is `$OMG_BITBUCKET_WORKSPACE` (default `zlalani`). Honour these env vars — never hardcode either value in new commands or edits.
 
 ---
 
@@ -100,6 +101,18 @@ All OMG repos use workspace `zlalani` on Bitbucket Cloud.
 Required environment variables:
 - `BITBUCKET_USER` — your Bitbucket username
 - `BITBUCKET_TOKEN` — Bitbucket app password with PR read/write scope
+
+---
+
+## Active Hooks (plugin-registered)
+
+| Hook | Event | Behaviour |
+|---|---|---|
+| `skill-router` | UserPromptSubmit | Injects routing instructions for matched intents. A routing instruction is a strong hint — if the matched skill clearly does not fit the user's actual request, say so and proceed with the right approach instead of force-running it. |
+| `enforce-mcp-search` | PreToolUse | Denies grep in MCP-covered dirs — follow the deny message's MCP steps; do not retry grep verbatim. |
+| `enforce-skill-usage` | PreToolUse | Denies `gh pr create` — use `/pr`. |
+| `post-edit-update` | PostToolUse | Auto-updates the code graph after source edits — no action needed. |
+| `session-start-status` | SessionStart | Prints graph status — if it reports staleness, suggest `code-review-graph update`. |
 
 ---
 

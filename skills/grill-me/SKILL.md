@@ -1,7 +1,6 @@
 ---
 name: grill-me
 description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me". Saves output to .planning/ for /ticket to auto-load.
-trigger: /grill-me
 ---
 
 # /grill-me [TICKET-ID]
@@ -26,7 +25,8 @@ Before starting the interview, run in main context:
 ```bash
 REPO_ROOT=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$REPO_ROOT" ]; then
-  for CANDIDATE in /Users/Shared/Code/omg /Users/Shared/Code/omg_db /Users/Shared/Code/omg_ice /Users/Shared/Code/omg-docker; do
+  WS_ROOT="${OMG_WORKSPACE_ROOT:-/Users/Shared/Code}"
+  for CANDIDATE in "$WS_ROOT/omg" "$WS_ROOT/omg_db" "$WS_ROOT/omg_ice" "$WS_ROOT/omg-docker"; do
     if git -C "$CANDIDATE" rev-parse --show-toplevel > /dev/null 2>&1; then
       REPO_ROOT=$(git -C "$CANDIDATE" rev-parse --show-toplevel); break
     fi
@@ -41,7 +41,7 @@ echo "ROOT=$REPO_ROOT | BRANCH=$CURRENT_BRANCH"
 ```
 Agent(
   description="Architectural overview for grill-me: <TICKET_ID>",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
@@ -88,7 +88,7 @@ When a question can be answered by exploring the codebase, spawn a haiku subagen
 ```
 Agent(
   description="Explore: <what you're looking for>",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>

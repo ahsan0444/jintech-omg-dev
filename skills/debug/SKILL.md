@@ -1,7 +1,6 @@
 ---
 name: debug
 description: Root cause analysis for bugs and unexpected behaviour. Traces execution paths, ranks hypotheses, confirms the culprit, and routes to /implement or /ticket. Run before /ticket when the problem is unclear. Use whenever you know something is broken but not why.
-trigger: /debug
 ---
 
 # /debug [TICKET-ID or symptom description]
@@ -32,6 +31,8 @@ You are the **Debug Orchestrator**. Your job is root cause analysis — not impl
 
 ## Model Usage
 
+> **Plugin agents:** codebase/lint/psql subagents use `omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
+
 | Task | Model | Subagent type |
 |---|---|---|
 | Codebase search, JAM, network traces | `haiku` | `Explore` |
@@ -47,7 +48,8 @@ Run directly in main context (the **only** permitted direct Bash block):
 REPO_ROOT=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null)
 
 if [ -z "$REPO_ROOT" ]; then
-  for CANDIDATE in /Users/Shared/Code/omg /Users/Shared/Code/omg_db /Users/Shared/Code/omg_ice /Users/Shared/Code/omg-docker; do
+  WS_ROOT="${OMG_WORKSPACE_ROOT:-/Users/Shared/Code}"
+  for CANDIDATE in "$WS_ROOT/omg" "$WS_ROOT/omg_db" "$WS_ROOT/omg_ice" "$WS_ROOT/omg-docker"; do
     if git -C "$CANDIDATE" rev-parse --show-toplevel > /dev/null 2>&1; then
       REPO_ROOT=$(git -C "$CANDIDATE" rev-parse --show-toplevel)
       break
@@ -116,7 +118,7 @@ Find the sender, the receiver, and any side effects involved in the symptom.
 ```
 Agent(
   description="Trace execution path for: <SYMPTOM_RAW>",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
@@ -212,7 +214,7 @@ Apply when LAYER is `backend` or `unknown`.
 ```
 Agent(
   description="Backend trace for: <SYMPTOM_RAW>",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
@@ -285,7 +287,7 @@ Spawn **exactly one** targeted subagent to confirm the prime suspect. This is th
 ```
 Agent(
   description="Verify prime suspect: <one-line hypothesis>",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>

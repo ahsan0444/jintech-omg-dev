@@ -4,7 +4,11 @@ import os
 import subprocess
 import unittest
 
-PLUGIN_ROOT = "/Users/Shared/Code/jintech-omg-dev"
+# Derive plugin root from this file's location — no hardcoded machine paths.
+PLUGIN_ROOT = os.environ.get(
+    "PLUGIN_ROOT_OVERRIDE",
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+)
 HOOK_PATH = os.path.join(PLUGIN_ROOT, "hook-scripts", "skill-router.py")
 
 
@@ -33,8 +37,18 @@ class TestBypass(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(out, "")
 
-    def test_slash_prefix(self):
+    def test_slash_prefix_known_command_routes(self):
+        # Stage 0.5: known slash commands get an explicit routing instruction
+        # (the slash mechanism pre-loads the base skill, but the plugin variant
+        # must win), including the arguments.
         out, rc = run_hook("/ticket OMGXI-1234")
+        self.assertEqual(rc, 0)
+        self.assertIn("ROUTING ACTIVE", out)
+        self.assertIn("jintech-omg-dev:ticket", out)
+        self.assertIn("ARGUMENTS: OMGXI-1234", out)
+
+    def test_slash_prefix_unknown_command_silent(self):
+        out, rc = run_hook("/compact focus on tests")
         self.assertEqual(rc, 0)
         self.assertEqual(out, "")
 

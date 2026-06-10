@@ -1,7 +1,6 @@
 ---
 name: ticket
 description: Investigates a Jira ticket via subagent orchestration and produces a Plan Mode proposal for review. Stops at plan approval — run /implement to execute.
-trigger: /ticket
 ---
 
 > **Before investigating complex features:** Run `/grill-me` first. It interviews you about the design, explores the codebase to answer questions, and gives you a shared understanding to paste as USER_NOTES. This makes codebase queries in Step 2c far more targeted.
@@ -25,7 +24,7 @@ You are the **Investigation Orchestrator**. You coordinate subagents, synthesise
 - **Orchestrate, don't gather.** Never call MCP tools, Read files, or run Bash directly in main context. Delegate everything except the Step 0 Bash block and ToolSearch (Step 4). Every direct tool call in main context adds tokens that every subsequent turn pays to re-read from cache.
 - **Locations, not contents — never re-read.** Subagents return file paths and line ranges only — never file contents. If a subagent already returned a snippet, do not read that file again.
 - **No file reads in subagents.** Subagents must never use sed, cat, Read, or any file-content tool. This explicitly includes: `grep -n "."` (full file enumeration), `grep -c ""`, `head`, `tail`, `less`, `more`, or any pattern that returns every line of a file. `find` is also prohibited when used to build a target list for subsequent reads — use targeted grep patterns instead.
-- **Explore for read-only steps. general-purpose for write steps.** Never give write access to a step that only needs to read.
+- **`omg-investigator` for read-only steps. `omg-implementer` for write steps.** Never give write access to a step that only needs to read — the investigator agent has no Read/Edit/Write tools by definition.
 - **Subagent output must be self-contained.** Every subagent must return file paths, line ranges, and unique grep strings so the plan never needs to re-read files.
 - **Parallel by default.** After Step 1 completes, all applicable investigation steps run in one message.
 - **Investigation freezes after Step 2.** Once parallel gathering is complete — including the Step 2c retry if it ran — **the orchestrator may not spawn any further subagents for any reason before completing Step 3.** This applies even if results are empty, confidence is low, or the orchestrator believes more data would help. The only permitted next action after Step 2 completes is Step 3. Reasoning like "I need more data" or "let me check one more thing" is a violation of this rule.
@@ -34,6 +33,8 @@ You are the **Investigation Orchestrator**. You coordinate subagents, synthesise
 ---
 
 ## Model Usage
+
+> **Plugin agents:** codebase/lint/psql subagents use `omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
 
 | Task | Model | Subagent type |
 |---|---|---|
@@ -51,7 +52,8 @@ REPO_ROOT=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null)
 
 # Fallback: if pwd is not inside a repo, try known project roots in order
 if [ -z "$REPO_ROOT" ]; then
-  for CANDIDATE in /Users/Shared/Code/omg /Users/Shared/Code/omg_db /Users/Shared/Code/omg_ice /Users/Shared/Code/omg-docker; do
+  WS_ROOT="${OMG_WORKSPACE_ROOT:-/Users/Shared/Code}"
+  for CANDIDATE in "$WS_ROOT/omg" "$WS_ROOT/omg_db" "$WS_ROOT/omg_ice" "$WS_ROOT/omg-docker"; do
     if git -C "$CANDIDATE" rev-parse --show-toplevel > /dev/null 2>&1; then
       REPO_ROOT=$(git -C "$CANDIDATE" rev-parse --show-toplevel)
       break
@@ -66,7 +68,7 @@ echo "REPO=$REPO_NAME | CURRENT=$CURRENT_BRANCH | DETECTED_BASE=$DETECTED_BASE |
 ```
 
 **If REPO_ROOT is still empty after fallback**, stop:
-> *"Not inside a git repository and none of the known paths (omg, omg_db, omg_ice, omg-docker) exist at /Users/Shared/Code/. cd into a repo and re-run."*
+> *"Not inside a git repository and none of the known paths (omg, omg_db, omg_ice, omg-docker) exist under $OMG_WORKSPACE_ROOT (default /Users/Shared/Code). cd into a repo and re-run."*
 
 **Ticket ID normalisation** — resolve before Step 1:
 - No args → parse from `CURRENT_BRANCH` (e.g. `OMGXI-8616_jin` → `OMGXI-8616`). If no ticket pattern, ask the user.
@@ -129,9 +131,11 @@ Agent(
   subagent_type="Explore",
   model="haiku",
   prompt="""
-  Use mcp__claude_ai_Atlassian__getJiraIssue to fetch <TICKET_ID>.
+  TOOL DISCOVERY: Atlassian MCP tool names vary by install (mcp__plugin_atlassian_atlassian__*, mcp__claude_ai_Atlassian__*, or mcp__atlassian__*). If a call fails with unknown tool, run ToolSearch(query="+jira <tool name>") and use the returned variant. Names below use the mcp__plugin_atlassian_atlassian__ prefix.
 
-  If it fails (wrong cloudId): call mcp__claude_ai_Atlassian__getAccessibleAtlassianResources,
+  Use mcp__plugin_atlassian_atlassian__getJiraIssue to fetch <TICKET_ID>.
+
+  If it fails (wrong cloudId): call mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources,
   pick the correct cloudId, retry once. If it fails again, return:
   ERROR: Could not fetch ticket. Accessible resources: <list them>
 
@@ -174,7 +178,7 @@ DB_SIGNAL:       yes if SUMMARY or TITLE contains any of:
                  table, schema, ALTER, migration, stored procedure,
                  postgres, DB, database — otherwise no
 LIB_SIGNAL:      yes if SUMMARY names a specific third-party library — otherwise no
-DB_COMPANION:    if DB_SIGNAL=yes AND REPO_NAME=omg → /Users/Shared/Code/omg_db
+DB_COMPANION:    if DB_SIGNAL=yes AND REPO_NAME=omg → <WS_ROOT>/omg_db (WS_ROOT = $OMG_WORKSPACE_ROOT, default /Users/Shared/Code)
                  otherwise none
 ```
 
@@ -194,75 +198,16 @@ Spawn all applicable steps **in one message**:
 
 ---
 
-### Step 2a — Specs (Haiku, Explore, conditional)
+### Steps 2a + 2b — Specs / JAM (conditional)
 
-```
-Agent(
-  description="Fetch Confluence specs for <TICKET_ID>",
-  subagent_type="Explore",
-  model="haiku",
-  prompt="""
-  Call mcp__claude_ai_Atlassian__getConfluencePage for: <CONFLUENCE_URL>
-  Extract only: requirements, constraints, data contracts, technical decisions.
-  If unavailable return: CONFLUENCE_REQUIREMENTS: unavailable
-
-  Return schema only (no prose):
-
-  CONFLUENCE_REQUIREMENTS: <bullet list or "unavailable">
-  CONFLUENCE_CONSTRAINTS: <bullet list or "none">
-  """
-)
-```
-
-**Discard rule:** If CONFLUENCE_REQUIREMENTS is "unavailable", drop this result entirely — do not include in synthesis.
-
----
-
-### Step 2b — Bug Context / JAM (Haiku, Explore, conditional)
-
-> **Note:** This step is lower priority than 2c. If the user denies this agent or it times out, treat the result as if JAM_URL was not found and skip this step's output during synthesis. Do not retry.
-
-```
-Agent(
-  description="Fetch JAM context for <TICKET_ID>",
-  subagent_type="Explore",
-  model="haiku",
-  prompt="""
-  Investigate JAM session: <JAM_URL>
-
-  Tool call budget: 4 (one per JAM tool). Stop at the earliest phase where ROOT_CAUSE is identifiable.
-
-  PHASE 1 (always — counts as 2 calls): mcp__Jam__getVideoTranscript AND mcp__Jam__getUserEvents.
-  If ROOT_CAUSE is identifiable after Phase 1 — STOP. Do not run Phase 2.
-
-  PHASE 2 (ONLY if ROOT_CAUSE is still "unclear" after Phase 1 — counts as 2 calls):
-  mcp__Jam__getConsoleLogs AND mcp__Jam__getNetworkRequests.
-
-  PHASE 3 (only if visual state is directly required to identify AFFECTED_COMPONENT — counts as 1 call,
-  only run if budget permits and phases 1-2 left AFFECTED_COMPONENT unknown):
-  mcp__Jam__getScreenshots.
-
-  Return schema only (no prose):
-
-  ROOT_CAUSE: <one sentence or "unclear">
-  REPRODUCTION_STEPS: <numbered list max 5>
-  FIRST_CONSOLE_ERROR: <message only — no stack trace, or "none">
-  FAILED_REQUEST: <METHOD url status, or "none">
-  AFFECTED_COMPONENT: <file or component name, or "unknown">
-  """
-)
-```
-
-**Discard rule:** If ROOT_CAUSE is "unclear" and all remaining fields are "none" or "unknown", drop this result — do not include in synthesis.
-
----
+Spawn only if the matching URL was found in Step 1. Templates live in `references/conditional-steps.md` (this skill's directory) — Read that file once *before* composing the Step 2 parallel message if 2a, 2b, or 2c-db applies; spawn each applicable agent exactly per its § template (haiku, Explore). Discard rules are part of each template. If neither URL was found and DB_COMPANION is unset, skip the Read entirely.
 
 ### Step 2c — Codebase Query, Primary Repo (Haiku, Explore, always)
 
 ```
 Agent(
   description="Query codebase for <TICKET_ID>",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
@@ -348,76 +293,15 @@ Agent(
 )
 ```
 
-**If CONFIDENCE=low or AFFECTED_FILES is empty**, spawn one retry:
-
-```
-Agent(
-  description="Retry codebase query — broader terms",
-  subagent_type="Explore",
-  model="haiku",
-  prompt="""
-  Working directory: <REPO_ROOT>
-  Ticket context: <SUMMARY from Step 1>
-  User notes: <any additional context supplied by the user at invocation>
-  Previous queries returned no clear files. Tool call budget: 3.
-
-  HARD RULES: no file reads (sed/cat/Read/head/tail/less/more), no full-file greps (grep -n "." / grep -c ""), no find-then-read. Paths and line ranges only.
-
-  MCP ONLY — grep is policy-blocked.
-  mcp__code-review-graph__traverse_graph_tool(query="<broader keyword>", mode="bfs", depth=3, repo_root="<REPO_ROOT>")
-  mcp__code-review-graph__semantic_search_nodes_tool(query="<alternative term>", detail_level="minimal", repo_root="<REPO_ROOT>")
-
-  **Exception — "absent by design":** If MCP searches return 0 results AND the ticket clearly describes adding something new (a new header, config value, route, or import that does not yet exist), that is a CONFIDENCE: high finding. Set CONFIDENCE: high and record the insertion point explicitly:
-    - AFFECTED_FILES: <most logical insertion point based on DATA_FLOW> — grep: "(not present — new addition required)" — <reason this is the right location>
-
-  Return schema only (no prose):
-
-  CONFIDENCE: high | low
-  AFFECTED_FILES:
-    - <absolute path>:<line range> — grep: "<unique string>" — <one-line reason>
-  DATA_FLOW: <1-2 sentences>
-  RISKS: <one line, or "none">
-  """
-)
-```
+**If CONFIDENCE=low or AFFECTED_FILES is empty:** Read `references/conditional-steps.md` § Step 2c retry (if not already read) and spawn exactly one retry agent per that template (haiku, omg-investigator).
 
 If still empty after retry, carry forward with CONFIDENCE: low — **do not spawn any further subagents**. The investigation ceiling has been reached. Proceed directly to Step 3 and surface FILE_CONFIDENCE: low in the clarification round.
 
 ---
 
-### Step 2c-db — Codebase Query, DB Companion (Haiku, Explore, conditional)
+### Step 2c-db — DB Companion (conditional)
 
-Runs in parallel with Step 2c. Spawn only if DB_COMPANION is set.
-
-```
-Agent(
-  description="Query DB companion for <TICKET_ID>",
-  subagent_type="Explore",
-  model="haiku",
-  prompt="""
-  Working directory: <DB_COMPANION>
-  Ticket context: <SUMMARY from Step 1>
-  Tool call budget: 2. Stop after grep if files are found.
-
-  HARD RULES: no file reads (sed/cat/Read/head/tail/less/more), no full-file greps (grep -n "." / grep -c ""), no find-then-read. Paths and line ranges only.
-
-  PHASE 1 — Find relevant SQL scripts:
-    Grep(pattern="<entity or function name from ticket>", path="<DB_COMPANION>/dbscripts", glob="*.sql")
-
-  PHASE 2 — Existing DB functions:
-    Bash("psql -t -A -c \"SELECT proname, pg_get_function_arguments(oid) as args FROM pg_proc WHERE proname ILIKE '%<entity_from_summary>%' ORDER BY proname\" 2>/dev/null")
-
-  Return schema only (no prose):
-
-  AFFECTED_FILES:
-    - <absolute path>:<line range or "new file"> — <one-line reason>
-  EXISTING_FUNCTIONS: <name(args) list, or "none">
-  RISKS: <one line, or "none">
-  """
-)
-```
-
----
+Spawn only if DB_COMPANION is set — runs in parallel with Step 2c. Template: `references/conditional-steps.md` § Step 2c-db (haiku, omg-investigator).
 
 ### Step 2d — Test Coverage Discovery (Haiku, Explore, always)
 
@@ -426,7 +310,7 @@ Runs in parallel with Step 2c and 2c-db.
 ```
 Agent(
   description="Find tests covering <TICKET_ID> change area",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>

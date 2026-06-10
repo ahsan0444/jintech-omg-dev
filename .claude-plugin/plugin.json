@@ -1,20 +1,19 @@
 {
   "name": "jintech-omg-dev",
   "description": "Jintech OMG development toolkit — SDLC skills (/ticket, /implement, /prepr, /pr, /grill-me, /debug) + code-review-graph MCP server + enforcement hooks",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Jintech Engineering",
     "email": "ahsan.zaheer@jintech.com"
   },
+  "homepage": "https://github.com/ahsan0444/jintech-omg-dev",
   "repository": "https://github.com/ahsan0444/jintech-omg-dev",
+  "license": "UNLICENSED",
   "keywords": ["omg", "perl", "sdlc", "jira", "bitbucket", "code-review-graph"],
   "mcpServers": {
     "code-review-graph": {
       "command": "python3",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/servers/start-crg.py"],
-      "env": {
-        "CRG_DB_PATH": "${PROJECT_ROOT}/.code-review-graph/graph.db"
-      }
+      "args": ["${CLAUDE_PLUGIN_ROOT}/servers/start-crg.py"]
     }
   }
 }

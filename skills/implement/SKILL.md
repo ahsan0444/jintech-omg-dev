@@ -1,7 +1,6 @@
 ---
 name: implement
 description: Executes an approved investigation plan — applies code changes via subagents, maintains a change log, handles failures, and verifies all edits. Run after /ticket produces an approved plan.
-trigger: /implement
 ---
 
 # /implement
@@ -32,6 +31,8 @@ You are the **Implementation Orchestrator**. You take an approved plan from `/ti
 ---
 
 ## Model Usage
+
+> **Plugin agents:** codebase/lint/psql subagents use `omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
 
 | Task | Model | Subagent type |
 |---|---|---|
@@ -123,7 +124,7 @@ Active change log format (trim as work progresses — keep last 3 completed + al
 ```
 Agent(
   description="Implement step N: <brief description>",
-  subagent_type="general-purpose",
+  subagent_type="omg-implementer",
   model="sonnet",  // use opus for complex/architectural changes
   prompt="""
   CONTEXT — steps this task depends on:
@@ -192,7 +193,7 @@ Agent(
 ```
 Agent(
   description="Diagnose failed step N",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Implementation step failed with: <ISSUE from failed subagent>
@@ -231,7 +232,7 @@ Spawn one subagent to catch OMG layer violations before /prepr runs:
 ```
 Agent(
   description="Layer compliance check — changed Perl files",
-  subagent_type="Explore",
+  subagent_type="omg-investigator",
   model="haiku",
   prompt="""
   Changed Perl files this session: <list .pm files from change log>

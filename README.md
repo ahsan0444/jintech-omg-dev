@@ -17,8 +17,10 @@ Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipe
 | `/grill-me` | Stress-tests a design/plan before /ticket runs |
 | `/debug` | Root cause analysis — traces, ranks hypotheses, routes to /implement or /ticket |
 | `code-review-graph` MCP | Semantic graph of 9k+ nodes, 78k+ edges across the OMG codebase — 14 tools wired into skills |
-| Hooks | `enforce-mcp-search` (PreToolUse), `post-edit-update` (PostToolUse), `session-start-status` (SessionStart) |
-| Commands | `/learn`, `/save-session`, `/resume-session`, `/embed-graph` |
+| Hooks | `skill-router` (UserPromptSubmit), `enforce-mcp-search` + `enforce-skill-usage` (PreToolUse), `post-edit-update` (PostToolUse), `session-start-status` (SessionStart) — all registered automatically via `hooks/hooks.json` |
+| Commands | `/learn`, `/save-session`, `/resume-session`, `/embed-graph`, `/router-stats` |
+| Routing manifest | `skill-routing-manifest.json` — regex intents → skills/inline procedures (see Hooks below) |
+| Agents | `omg-investigator` (read-only locator — no Read/Edit/Write tools, MCP-graph-first) and `omg-implementer` (single-step executor — OMG layer rules + TDD baked into its system prompt). Skills spawn these instead of generic `Explore`/`general-purpose`, turning "no file reads in subagents" from a prompt rule into a tool permission. |
 
 ---
 
@@ -67,6 +69,8 @@ export BITBUCKET_TOKEN="your-bitbucket-app-password"
 
 Then run `source ~/.zshrc`.
 
+> **Security:** Use a Bitbucket **app password scoped to Pull Requests read/write only** — never your account password. The plugin's curl calls pass credentials via stdin (`curl -K -`), so the token never appears in the process list. Rotate the token if a session transcript is ever shared.
+
 #### Windows — add to your PowerShell profile (`$PROFILE`) or System Environment Variables
 
 ```powershell
@@ -76,6 +80,16 @@ $env:BITBUCKET_TOKEN = "your-bitbucket-app-password"
 
 To persist across sessions, set them as **System Environment Variables**:
 > Start → "Edit the system environment variables" → Environment Variables → New
+
+#### Optional environment overrides (all platforms)
+
+Defaults match the standard Jintech setup — set these only if your machine differs. This is the **single place** to relocate the workspace; no skill files need editing.
+
+```bash
+export OMG_WORKSPACE_ROOT="/Users/Shared/Code"   # parent dir of omg/omg_db/omg_ice checkouts (Windows Git Bash: /c/Code)
+export OMG_BITBUCKET_WORKSPACE="zlalani"         # Bitbucket Cloud workspace slug
+export CLAUDE_SKILL_ROUTER_DISABLED=1            # kill switch for prompt routing (unset = enabled)
+```
 
 ### 4. Initialise the code-review-graph (first time per repo)
 
@@ -186,6 +200,24 @@ Adjust `-WorkingDirectory` to match your OMG checkout path.
 
 ---
 
+## Hooks
+
+All hooks register automatically from `hooks/hooks.json` when the plugin is enabled. Every hook fails open — a broken or missing script never blocks your tools.
+
+| Hook | Event | What it does |
+|---|---|---|
+| `skill-router` | UserPromptSubmit | Matches natural-language prompts against `skill-routing-manifest.json` and injects a routing instruction (e.g. "create a PR" → `/pr`). Kill switch: `export CLAUDE_SKILL_ROUTER_DISABLED=1`. Override the manifest by copying it to `~/.claude/skill-routing-manifest.json` or setting `SKILL_ROUTER_MANIFEST_OVERRIDE`. Prefix a prompt with `\` to bypass routing once. |
+| `enforce-mcp-search` | PreToolUse (Grep/Bash) | Denies grep inside `lib/`, `public/javascripts/`, `t/` of a repo with a built code-review-graph — directs Claude to MCP tools instead. `views/` is exempt. |
+| `enforce-skill-usage` | PreToolUse (Bash) | Denies `gh pr create` (OMG uses Bitbucket) and points to `/pr`. |
+| `post-edit-update` | PostToolUse (Edit/Write) | Incremental `code-review-graph update` after source-file edits. Skips docs/config edits. |
+| `session-start-status` | SessionStart | Prints graph health (node count, staleness) into context at session start. |
+
+> **Permissions template:** `settings.json` at the plugin root is a *template* — Claude Code does not load it from a plugin. Copy its `permissions.allow` block into your project's `.claude/settings.json` to pre-approve the read-only Bash and MCP calls the skills make.
+
+> **Design note — router limits:** regex intent matching has a permanent false-positive tail (it matches *mentions*, not intent — e.g. a prompt *discussing* the prepr skill can route to it). Run `/router-stats` periodically and tighten noisy patterns. Longer term, prefer letting Claude pick skills from their `description` triggers and keep the router only for the inline procedures that have no skill equivalent; if a routing instruction clearly doesn't fit the request, Claude is instructed (CLAUDE.md) to say so and proceed correctly rather than force-run the skill.
+
+---
+
 ## Updating the plugin
 
 ```
@@ -198,8 +230,8 @@ Adjust `-WorkingDirectory` to match your OMG checkout path.
 
 | Problem | Fix |
 |---|---|
-| `python3: command not found` (Windows) | Add Python to PATH or use `python` instead — check with `where python3` |
-| `code-review-graph: command not found` | The plugin venv may not have activated — try `/plugin reinit jintech-omg-dev` |
+| `python3: command not found` (Windows) | Hooks invoke `python3` literally. python.org installs ship only `python.exe` — create a shim once: `copy "%LocalAppData%\Programs\Python\Python314\python.exe" "%LocalAppData%\Programs\Python\Python314\python3.exe"` (adjust path; the Microsoft Store build already provides `python3`). Verify with `python3 --version`. |
+| `code-review-graph: command not found` | The plugin venv may not have activated — restart Claude Code (the MCP server self-installs on first start), or reinstall via `/plugin` → jintech-omg-dev |
 | `code-review-graph` install fails on Python 3.9/3.10/3.11 | Requires Python 3.12+. On macOS: `brew install python@3.14`. On Windows: download from python.org and ensure it's on PATH |
 | Hook not firing | Verify hooks are registered: check `.claude/settings.json` in your project |
 | Graph DB missing | Run `code-review-graph build` from inside the OMG repo root |

@@ -1,5 +1,7 @@
 ---
 description: Extract reusable patterns from the current session and save as a skill file for future use.
+argument-hint: "[optional pattern name or focus area]"
+disable-model-invocation: true
 ---
 
 # /learn - Extract Reusable Patterns

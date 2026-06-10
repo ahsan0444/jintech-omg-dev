@@ -1,6 +1,9 @@
 ---
 description: Load the most recent session file from ~/.claude/session-data/ and resume work with full context from where the last session ended.
+argument-hint: "[YYYY-MM-DD or session file path (optional — defaults to most recent)]"
 ---
+
+**Argument provided by user:** `$ARGUMENTS` (empty = load most recent)
 
 # Resume Session Command
 

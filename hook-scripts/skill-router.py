@@ -78,10 +78,28 @@ def render_skill_output(intent):
     )
 
 
+def resolve_inline_file(raw):
+    """Resolve an inline-procedure path from the manifest.
+
+    Supports, in order:
+      1. ${CLAUDE_PLUGIN_ROOT}-prefixed paths (canonical — ships with the plugin)
+      2. Absolute / ~-prefixed paths (user overrides)
+      3. Plugin-root-relative paths (e.g. "procedures/inline/foo.md")
+    """
+    expanded = raw.replace("${CLAUDE_PLUGIN_ROOT}", plugin_root())
+    expanded = os.path.expanduser(expanded)
+    if os.path.isfile(expanded):
+        return expanded
+    candidate = os.path.join(plugin_root(), raw)
+    if os.path.isfile(candidate):
+        return candidate
+    return None
+
+
 def render_inline_output(intent):
     action = intent["action"]
-    file_path = os.path.expanduser(action["file"])
-    if not os.path.isfile(file_path):
+    file_path = resolve_inline_file(action["file"])
+    if not file_path:
         return None
     try:
         with open(file_path, "r", encoding="utf-8") as f:

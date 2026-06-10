@@ -1,5 +1,7 @@
 ---
 description: Generate vector embeddings for the code-review-graph to enable semantic search. Run once after `code-review-graph build`. Safe to re-run — only re-embeds changed nodes.
+argument-hint: "[repo-path (optional — defaults to current repo)]"
+allowed-tools: Bash(git *), Bash(ls *), Bash(echo *), mcp__code-review-graph__embed_graph_tool, mcp__plugin_jintech-omg-dev_code-review-graph__embed_graph_tool, ToolSearch
 ---
 
 # /embed-graph
@@ -13,7 +15,8 @@ Run directly in main context — no subagent needed.
 ```bash
 REPO_ROOT=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$REPO_ROOT" ]; then
-  for CANDIDATE in /Users/Shared/Code/omg /Users/Shared/Code/omg_db /Users/Shared/Code/omg_ice; do
+  WS_ROOT="${OMG_WORKSPACE_ROOT:-/Users/Shared/Code}"
+  for CANDIDATE in "$WS_ROOT/omg" "$WS_ROOT/omg_db" "$WS_ROOT/omg_ice"; do
     if git -C "$CANDIDATE" rev-parse --show-toplevel > /dev/null 2>&1; then
       REPO_ROOT=$(git -C "$CANDIDATE" rev-parse --show-toplevel); break
     fi
@@ -44,6 +47,6 @@ Embedded 7605 nodes. Semantic search now active.
 
 If the tool returns an error about `sentence-transformers` not installed:
 ```
-Run: /plugin reinit jintech-omg-dev
+Restart Claude Code so the MCP server reinstalls its venv (it self-installs sentence-transformers on first start)
 Then re-run /embed-graph
 ```

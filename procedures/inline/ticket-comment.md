@@ -13,8 +13,9 @@ If comment text not provided in user message: ask for it.
 ## Step 2 — Post Comment
 
 ```
-1. Call mcp__claude_ai_Atlassian__getAccessibleAtlassianResources → get cloudId
-2. Call mcp__claude_ai_Atlassian__addCommentToJiraIssue with:
+0. If tool unknown: ToolSearch(query="+jira <tool>") — Atlassian tool prefix varies by install; use the returned variant.
+1. Call mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources → get cloudId
+2. Call mcp__plugin_atlassian_atlassian__addCommentToJiraIssue with:
      cloudId = <cloudId>
      issueIdOrKey = <TICKET_ID>
      body = <comment text from user>

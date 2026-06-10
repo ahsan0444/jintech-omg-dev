@@ -13,8 +13,9 @@ If TICKET_ID = none: ask the user to provide the ticket ID.
 ## Step 2 — Fetch via Atlassian MCP
 
 ```
-1. Call mcp__claude_ai_Atlassian__getAccessibleAtlassianResources → get cloudId
-2. Call mcp__claude_ai_Atlassian__getJiraIssue with cloudId and issueIdOrKey=<TICKET_ID>
+0. If tool unknown: ToolSearch(query="+jira <tool>") — Atlassian tool prefix varies by install; use the returned variant.
+1. Call mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources → get cloudId
+2. Call mcp__plugin_atlassian_atlassian__getJiraIssue with cloudId and issueIdOrKey=<TICKET_ID>
 ```
 
 ## Step 3 — Display

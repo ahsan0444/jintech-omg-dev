@@ -1,6 +1,9 @@
 ---
 description: Save current session state to a dated file in ~/.claude/session-data/ so work can be resumed in a future session with full context.
+argument-hint: "[optional one-line topic override]"
 ---
+
+**Today's date (use this — do not guess):** !`date +%Y-%m-%d`
 
 # Save Session Command
 

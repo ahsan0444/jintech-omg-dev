@@ -1,35 +1,57 @@
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hook-scripts/run-hook.py\" skill-router",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Grep|Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'p=\"${CLAUDE_PLUGIN_ROOT}/hook-scripts/enforce-mcp-search.py\"; [ -f \"$p\" ] && python3 \"$p\" || exit 0'"
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hook-scripts/run-hook.py\" enforce-mcp-search",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hook-scripts/run-hook.py\" enforce-skill-usage",
+            "timeout": 5
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'p=\"${CLAUDE_PLUGIN_ROOT}/hook-scripts/post-edit-update.py\"; [ -f \"$p\" ] && python3 \"$p\" || exit 0'",
-            "timeout": 30
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hook-scripts/run-hook.py\" post-edit-update",
+            "timeout": 60
           }
         ]
       }
     ],
     "SessionStart": [
       {
-        "matcher": "",
+        "matcher": "startup|resume",
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'p=\"${CLAUDE_PLUGIN_ROOT}/hook-scripts/session-start-status.py\"; [ -f \"$p\" ] && python3 \"$p\" || exit 0'",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hook-scripts/run-hook.py\" session-start-status",
             "timeout": 10
           }
         ]
