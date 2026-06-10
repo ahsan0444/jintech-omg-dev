@@ -2,7 +2,7 @@
 
 Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipeline, the code-review-graph MCP server, and enforcement hooks into a single installable unit.
 
-**Supports macOS and Windows.**
+**Supports macOS and Linux.** Windows is currently untested — the first CI run (v1.2.1) surfaced pre-existing Windows path-handling failures in the enforce-mcp-search hook and the skill router; CI runs ubuntu-only until those are fixed.
 
 ---
 
