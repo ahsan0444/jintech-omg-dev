@@ -1,3 +1,15 @@
+# CHANGES — jintech-omg-dev 1.2.2 → 1.2.3 (grill-me MCP tool name fix)
+
+### `skills/grill-me/SKILL.md` — plugin-namespaced MCP tool names
+
+Both subagent prompts (architectural orientation + codebase exploration) referenced
+bare `mcp__code-review-graph__*` tool names. Since v1.2.1, `omg-investigator` only
+exposes `mcp__plugin_jintech-omg-dev_code-review-graph__*` — the bare names were
+silently failing with "unknown tool" on every MCP call during a grill-me session.
+All 8 occurrences updated to the plugin-namespaced prefix.
+
+---
+
 # CHANGES — jintech-omg-dev 1.2.1 → 1.2.2 (Windows compatibility)
 
 First-ever CI run (the workflow shipped untracked in v1.2.0) exposed two Windows failures:

@@ -48,17 +48,17 @@ Agent(
   MCP ONLY — grep is policy-blocked.
 
   STEP 1 — Get high-level architecture:
-    mcp__code-review-graph__get_architecture_overview_tool(repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_architecture_overview_tool(repo_root="<REPO_ROOT>")
     → communities, hub nodes, dominant flows
 
   STEP 2 — If the ticket mentions a specific domain/feature, find its community:
-    mcp__code-review-graph__semantic_search_nodes_tool(query="<key noun from ticket title>", detail_level="minimal", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool(query="<key noun from ticket title>", detail_level="minimal", repo_root="<REPO_ROOT>")
     If a node is returned:
-    mcp__code-review-graph__get_community_tool(node="<node name>", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_community_tool(node="<node name>", repo_root="<REPO_ROOT>")
     → reveals which subsystem owns this feature and its main dependencies
 
   STEP 3 — Surface suggested investigation angles:
-    mcp__code-review-graph__get_suggested_questions_tool(repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_suggested_questions_tool(repo_root="<REPO_ROOT>")
     → use returned questions as seeds for interview branches
 
   Return schema only (no prose):
@@ -93,13 +93,13 @@ Agent(
   prompt="""
   Working directory: <REPO_ROOT>
   MCP ONLY — grep is policy-blocked. Use in order:
-    1. mcp__code-review-graph__semantic_search_nodes_tool(query="<term>", detail_level="minimal", repo_root="<REPO_ROOT>")
+    1. mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool(query="<term>", detail_level="minimal", repo_root="<REPO_ROOT>")
     2. If nodes returned and you need callers/callees:
-       mcp__code-review-graph__query_graph_tool(pattern="callers_of", target="<node>", detail_level="minimal", repo_root="<REPO_ROOT>")
+       mcp__plugin_jintech-omg-dev_code-review-graph__query_graph_tool(pattern="callers_of", target="<node>", detail_level="minimal", repo_root="<REPO_ROOT>")
     3. If 0 results from step 1:
-       mcp__code-review-graph__traverse_graph_tool(query="<term>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
+       mcp__plugin_jintech-omg-dev_code-review-graph__traverse_graph_tool(query="<term>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
     4. If exploring which subsystem owns a component:
-       mcp__code-review-graph__get_community_tool(node="<node name>", repo_root="<REPO_ROOT>")
+       mcp__plugin_jintech-omg-dev_code-review-graph__get_community_tool(node="<node name>", repo_root="<REPO_ROOT>")
   Return: file paths and module names only — no file contents.
   """
 )
