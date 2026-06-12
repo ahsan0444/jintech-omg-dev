@@ -239,10 +239,14 @@ Agent(
   Then call mcp__plugin_atlassian_atlassian__getJiraIssue with that cloudId and issueIdOrKey="<TICKET_ID>".
   Do not retry more than once. If it fails return ERROR: <reason>.
 
+  JIRA_URL rule: use the URL returned by getJiraIssue (field: url or self converted to browse URL).
+  Fallback if MCP unavailable: https://oliveruk.atlassian.net/browse/<TICKET_ID>
+  NEVER construct a URL using any other domain (jintech.*, atlassian.net guesses, etc.).
+
   Return ONLY the schema below. No prose, no preamble.
 
   TITLE: <ticket title>
-  JIRA_URL: <full URL to the Jira issue>
+  JIRA_URL: <full URL to the Jira issue — use oliveruk.atlassian.net/browse/<TICKET_ID> if MCP unavailable>
   SUMMARY: <3-5 sentence condensed description — key facts only>
   ACCEPTANCE_CRITERIA: <bullet list, or "none">
   FIGMA_URL: <url or "none">
