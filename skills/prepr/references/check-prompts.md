@@ -150,26 +150,30 @@ Agent(
   prompt="""
   Changed .js files (excluding *.min.js): <list from Step 0>
 
+  IMPORTANT: Check only NEW code introduced in this diff — not pre-existing issues.
+  For each file, run: git -C <REPO_ROOT> diff <file>
+  Then apply checks only to lines starting with + (added lines), ignoring lines starting with -.
+
   For each file:
 
-  1. No raw $.ajax calls — must use omg.dataDelivery:
-     Grep: grep -n '\.ajax(' <file>
-     Flag $.ajax as BLOCKER.
+  1. No new raw $.ajax calls — must use omg.dataDelivery:
+     From diff added lines: grep '\.ajax('
+     Flag only NEW $.ajax additions as BLOCKER. Pre-existing $.ajax calls are not in scope.
 
   2. No new top-level globals — all code under omg namespace:
-     Grep: grep -n '^var \|^let \|^const \|^function ' <file>
-     Flag top-level declarations outside omg namespace as WARNING.
+     From diff added lines: grep '^+var \|^+let \|^+const \|^+function '
+     Flag new top-level declarations outside omg namespace as WARNING.
 
-  3. No hardcoded display strings in alerts:
-     Grep: grep -n "showFlashAlert\|alert(" <file> | grep -v 'localText\.'
-     Flag hardcoded strings as WARNING.
+  3. No new hardcoded display strings in alerts:
+     From diff added lines: grep 'showFlashAlert\|alert(' | grep -v 'localText\.'
+     Flag new hardcoded strings as WARNING.
 
   4. New files should use const/let not var:
      Check if file is newly added (git status in <REPO_ROOT>).
-     If new: grep -n '^var ' and flag as WARNING.
+     If new: grep -n '^var ' in full file and flag as WARNING.
 
-  5. Class-based JS selectors (prefer data-ref):
-     Grep: grep -n "\$('\.[a-z]\|querySelector('\.[a-z]" <file>
+  5. New class-based JS selectors (prefer data-ref):
+     From diff added lines: grep "\$('\.[a-z]\|querySelector('\.[a-z]"
      Flag as WARNING (not blocker — legacy code uses them).
 
   Return schema only, per file (no prose):
@@ -195,10 +199,13 @@ Agent(
   Changed SCSS files: <scss list from Step 0>
   Repo root: <REPO_ROOT>
 
-  CHECK 1 — Direct CSS edits are not allowed:
-    Files in public/css/ must not be edited directly (compiled from SCSS via build_sass.sh).
-    If any public/css/*.css files are in the changed list: flag each as BLOCKER.
-    Exception: public/css/bryntum/*_omg.css overrides — flag as WARNING not blocker.
+  CHECK 1 — Direct CSS edits:
+    Only flag public/css/*.css files as BLOCKER if a corresponding SCSS source exists
+    (i.e. the CSS is compiled output and should not be edited directly).
+    To check: find <REPO_ROOT>/public -name "*.scss" | xargs grep -rl "<css_basename_without_ext>" 2>/dev/null
+    If a matching SCSS source is found: flag the CSS file as BLOCKER.
+    If no SCSS source found: the file is managed directly — skip, no violation.
+    Exception: public/css/bryntum/*_omg.css overrides — flag as WARNING not blocker regardless.
 
   CHECK 2 — SCSS import order (for changed app.scss only):
     Grep: grep -n '@import' <file>

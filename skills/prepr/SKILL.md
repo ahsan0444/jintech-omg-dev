@@ -85,8 +85,34 @@ git -C "$REPO_ROOT" diff --check 2>&1 | head -5
 
 **Get changed files:**
 
+Prefer uncommitted changes (the current ticket's work-in-progress) over the full branch diff. Use this logic:
+
 ```bash
-git -C "$REPO_ROOT" diff --name-only origin/<BASE_BRANCH>...HEAD
+# Priority 1: uncommitted changes (working tree + staged)
+UNCOMMITTED=$(
+  { git -C "$REPO_ROOT" diff --name-only; git -C "$REPO_ROOT" diff --cached --name-only; } \
+  | sort -u
+)
+
+if [ -n "$UNCOMMITTED" ]; then
+  CHANGED_FILES="$UNCOMMITTED"
+  echo "SCOPE=uncommitted ($(echo "$UNCOMMITTED" | wc -l | tr -d ' ') files)"
+else
+  # Priority 2: commits on this branch matching the ticket ID
+  TICKET_ID=$(echo "$CURRENT_BRANCH" | grep -oiE 'OMGXI-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]')
+  if [ -n "$TICKET_ID" ]; then
+    TICKET_FILES=$(git -C "$REPO_ROOT" log --name-only origin/"$BASE_BRANCH"..HEAD \
+      --grep="$TICKET_ID" --pretty="" 2>/dev/null | sort -u)
+  fi
+  if [ -n "$TICKET_FILES" ]; then
+    CHANGED_FILES="$TICKET_FILES"
+    echo "SCOPE=committed (ticket $TICKET_ID — $(echo "$TICKET_FILES" | wc -l | tr -d ' ') files)"
+  else
+    # Fallback: full branch diff — may include other tickets' changes
+    CHANGED_FILES=$(git -C "$REPO_ROOT" diff --name-only origin/"$BASE_BRANCH"...HEAD)
+    echo "SCOPE=full branch diff vs $BASE_BRANCH — $(echo "$CHANGED_FILES" | wc -l | tr -d ' ') files (may include unrelated commits)"
+  fi
+fi
 ```
 
 Categorise into buckets:
