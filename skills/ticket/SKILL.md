@@ -24,7 +24,7 @@ You are the **Investigation Orchestrator**. You coordinate subagents, synthesise
 - **Orchestrate, don't gather.** Never call MCP tools, Read files, or run Bash directly in main context. Delegate everything except the Step 0 Bash block and ToolSearch (Step 4). Every direct tool call in main context adds tokens that every subsequent turn pays to re-read from cache.
 - **Locations, not contents — never re-read.** Subagents return file paths and line ranges only — never file contents. If a subagent already returned a snippet, do not read that file again.
 - **No file reads in subagents.** Subagents must never use sed, cat, Read, or any file-content tool. This explicitly includes: `grep -n "."` (full file enumeration), `grep -c ""`, `head`, `tail`, `less`, `more`, or any pattern that returns every line of a file. `find` is also prohibited when used to build a target list for subsequent reads — use targeted grep patterns instead.
-- **`omg-investigator` for read-only steps. `omg-implementer` for write steps.** Never give write access to a step that only needs to read — the investigator agent has no Read/Edit/Write tools by definition.
+- **`jintech-omg-dev:omg-investigator` for read-only steps. `jintech-omg-dev:omg-implementer` for write steps.** Never give write access to a step that only needs to read — the investigator agent has no Read/Edit/Write tools by definition.
 - **Subagent output must be self-contained.** Every subagent must return file paths, line ranges, and unique grep strings so the plan never needs to re-read files.
 - **Parallel by default.** After Step 1 completes, all applicable investigation steps run in one message.
 - **Investigation freezes after Step 2.** Once parallel gathering is complete — including the Step 2c retry if it ran — **the orchestrator may not spawn any further subagents for any reason before completing Step 3.** This applies even if results are empty, confidence is low, or the orchestrator believes more data would help. The only permitted next action after Step 2 completes is Step 3. Reasoning like "I need more data" or "let me check one more thing" is a violation of this rule.
@@ -34,7 +34,7 @@ You are the **Investigation Orchestrator**. You coordinate subagents, synthesise
 
 ## Model Usage
 
-> **Plugin agents:** codebase/lint/psql subagents use `omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
+> **Plugin agents:** codebase/lint/psql subagents use `jintech-omg-dev:omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `jintech-omg-dev:omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
 
 | Task | Model | Subagent type |
 |---|---|---|
@@ -207,7 +207,7 @@ Spawn only if the matching URL was found in Step 1. Templates live in `reference
 ```
 Agent(
   description="Query codebase for <TICKET_ID>",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
@@ -293,7 +293,7 @@ Agent(
 )
 ```
 
-**If CONFIDENCE=low or AFFECTED_FILES is empty:** Read `references/conditional-steps.md` § Step 2c retry (if not already read) and spawn exactly one retry agent per that template (haiku, omg-investigator).
+**If CONFIDENCE=low or AFFECTED_FILES is empty:** Read `references/conditional-steps.md` § Step 2c retry (if not already read) and spawn exactly one retry agent per that template (haiku, jintech-omg-dev:omg-investigator).
 
 If still empty after retry, carry forward with CONFIDENCE: low — **do not spawn any further subagents**. The investigation ceiling has been reached. Proceed directly to Step 3 and surface FILE_CONFIDENCE: low in the clarification round.
 
@@ -301,7 +301,7 @@ If still empty after retry, carry forward with CONFIDENCE: low — **do not spaw
 
 ### Step 2c-db — DB Companion (conditional)
 
-Spawn only if DB_COMPANION is set — runs in parallel with Step 2c. Template: `references/conditional-steps.md` § Step 2c-db (haiku, omg-investigator).
+Spawn only if DB_COMPANION is set — runs in parallel with Step 2c. Template: `references/conditional-steps.md` § Step 2c-db (haiku, jintech-omg-dev:omg-investigator).
 
 ### Step 2d — Test Coverage Discovery (Haiku, Explore, always)
 
@@ -310,7 +310,7 @@ Runs in parallel with Step 2c and 2c-db.
 ```
 Agent(
   description="Find tests covering <TICKET_ID> change area",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>

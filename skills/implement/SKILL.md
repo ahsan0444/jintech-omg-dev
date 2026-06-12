@@ -32,7 +32,7 @@ You are the **Implementation Orchestrator**. You take an approved plan from `/ti
 
 ## Model Usage
 
-> **Plugin agents:** codebase/lint/psql subagents use `omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
+> **Plugin agents:** codebase/lint/psql subagents use `jintech-omg-dev:omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `jintech-omg-dev:omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
 
 | Task | Model | Subagent type |
 |---|---|---|
@@ -124,7 +124,7 @@ Active change log format (trim as work progresses — keep last 3 completed + al
 ```
 Agent(
   description="Implement step N: <brief description>",
-  subagent_type="omg-implementer",
+  subagent_type="jintech-omg-dev:omg-implementer",
   model="sonnet",  // use opus for complex/architectural changes
   prompt="""
   CONTEXT — steps this task depends on:
@@ -210,7 +210,7 @@ Agent(
 ```
 Agent(
   description="Diagnose failed step N",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Implementation step failed with: <ISSUE from failed subagent>
@@ -249,7 +249,7 @@ Spawn one subagent to catch OMG layer violations before /prepr runs:
 ```
 Agent(
   description="Layer compliance check — changed Perl files",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Changed Perl files this session: <list .pm files from change log>

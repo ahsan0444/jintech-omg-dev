@@ -81,7 +81,7 @@ Agent(
 ```
 Agent(
   description="Retry codebase query — broader terms",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
@@ -121,7 +121,7 @@ Runs in parallel with Step 2c. Spawn only if DB_COMPANION is set.
 ```
 Agent(
   description="Query DB companion for <TICKET_ID>",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <DB_COMPANION>

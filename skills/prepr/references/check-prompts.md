@@ -11,7 +11,7 @@ Loaded on demand by SKILL.md Step 1. Each § is a complete Agent() template — 
 ```
 Agent(
   description="Perl review — perlcritic + OMG conventions",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Changed Perl files: <list from Step 0>
@@ -101,7 +101,7 @@ Agent(
 ```
 Agent(
   description="TT template review — OMG conventions",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Changed .tt files: <list from Step 0>
@@ -145,7 +145,7 @@ Agent(
 ```
 Agent(
   description="JS review — OMG namespace conventions",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Changed .js files (excluding *.min.js): <list from Step 0>
@@ -192,7 +192,7 @@ Agent(
 ```
 Agent(
   description="CSS/SCSS review",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Changed CSS files: <css list from Step 0>
@@ -231,7 +231,7 @@ Agent(
 ```
 Agent(
   description="SQL/DB script review — OMG naming conventions",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Changed SQL files: <list from Step 0>

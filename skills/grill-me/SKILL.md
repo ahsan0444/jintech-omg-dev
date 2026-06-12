@@ -41,7 +41,7 @@ echo "ROOT=$REPO_ROOT | BRANCH=$CURRENT_BRANCH"
 ```
 Agent(
   description="Architectural overview for grill-me: <TICKET_ID>",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
@@ -88,7 +88,7 @@ When a question can be answered by exploring the codebase, spawn a haiku subagen
 ```
 Agent(
   description="Explore: <what you're looking for>",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>

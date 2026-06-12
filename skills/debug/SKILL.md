@@ -31,7 +31,7 @@ You are the **Debug Orchestrator**. Your job is root cause analysis — not impl
 
 ## Model Usage
 
-> **Plugin agents:** codebase/lint/psql subagents use `omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
+> **Plugin agents:** codebase/lint/psql subagents use `jintech-omg-dev:omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `jintech-omg-dev:omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
 
 | Task | Model | Subagent type |
 |---|---|---|
@@ -118,7 +118,7 @@ Find the sender, the receiver, and any side effects involved in the symptom.
 ```
 Agent(
   description="Trace execution path for: <SYMPTOM_RAW>",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
@@ -214,7 +214,7 @@ Apply when LAYER is `backend` or `unknown`.
 ```
 Agent(
   description="Backend trace for: <SYMPTOM_RAW>",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>
@@ -289,7 +289,7 @@ Spawn **exactly one** targeted subagent to confirm the prime suspect. This is th
 ```
 Agent(
   description="Verify prime suspect: <one-line hypothesis>",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Working directory: <REPO_ROOT>

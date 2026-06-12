@@ -25,7 +25,7 @@ You are the Pre-PR Review Orchestrator. You audit every changed file on the curr
 
 ## Model Usage
 
-> **Plugin agents:** codebase/lint/psql subagents use `omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
+> **Plugin agents:** codebase/lint/psql subagents use `jintech-omg-dev:omg-investigator` (read-only, no-file-reads enforced by tool permissions); edit subagents use `jintech-omg-dev:omg-implementer` (layer rules + TDD baked in). If these agent types are unavailable (plugin agents disabled), fall back to `Explore` / `general-purpose` with the same prompts. Jira/JAM/Confluence fetches stay on `Explore` (they need Atlassian/Jam MCP tools).
 
 | Task | Model | Subagent type |
 |---|---|---|
@@ -139,7 +139,7 @@ Spawn immediately after Step 0, **before** the parallel lint checks. Results fee
 ```
 Agent(
   description="Semantic risk assessment — changed files",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Changed files: <full list from Step 0>
@@ -180,7 +180,7 @@ Spawn all applicable subagents **in one message** based on non-empty buckets:
 
 ### Check templates (1a–1e)
 
-Read `references/check-prompts.md` once (one Read covers all five templates), then spawn **only the agents whose bucket is non-empty**, all in one message (haiku, omg-investigator):
+Read `references/check-prompts.md` once (one Read covers all five templates), then spawn **only the agents whose bucket is non-empty**, all in one message (haiku, jintech-omg-dev:omg-investigator):
 
 | § | Bucket | Check |
 |---|---|---|
@@ -200,7 +200,7 @@ Output to main context before spawning:
 ```
 Agent(
   description="Run Perl test suite",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Run the Perl test suite:
@@ -308,7 +308,7 @@ For each WARNING, spawn a fix agent:
 ```
 Agent(
   description="Fix warning: <issue> in <file>",
-  subagent_type="omg-implementer",
+  subagent_type="jintech-omg-dev:omg-implementer",
   model="sonnet",
   prompt="""
   File: <absolute path>

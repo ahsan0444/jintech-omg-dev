@@ -212,7 +212,7 @@ If no plan file: Changes section will use DIFF_STAT and COMMITS from Step 3.
 ```
 Agent(
   description="Semantic risk assessment for PR branch",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Changed files: <PERL_FILES and all other changed files from Step 3>
@@ -279,7 +279,7 @@ Agent(
 ```
 Agent(
   description="Perlcritic check on changed Perl files",
-  subagent_type="omg-investigator",
+  subagent_type="jintech-omg-dev:omg-investigator",
   model="haiku",
   prompt="""
   Changed Perl files: <PERL_FILES>
