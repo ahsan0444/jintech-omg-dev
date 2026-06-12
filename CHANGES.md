@@ -1,3 +1,14 @@
+# CHANGES — jintech-omg-dev 1.2.3 → 1.2.4 (plugin agent namespace fix)
+
+All skills referenced plugin agents as bare `omg-investigator` / `omg-implementer`.
+Claude Code's agent registry requires the full `plugin-name:agent-name` form —
+bare names caused "agent not found" on every skill invocation, forcing Claude to
+self-correct at runtime. All `subagent_type` values and prose references updated
+to `jintech-omg-dev:omg-investigator` / `jintech-omg-dev:omg-implementer` across
+8 skill files.
+
+---
+
 # CHANGES — jintech-omg-dev 1.2.2 → 1.2.3 (grill-me MCP tool name fix)
 
 ### `skills/grill-me/SKILL.md` — plugin-namespaced MCP tool names
