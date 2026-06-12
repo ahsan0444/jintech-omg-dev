@@ -67,6 +67,13 @@ BASE_BRANCH_AUTO=$(git -C "$REPO_ROOT" symbolic-ref refs/remotes/origin/HEAD 2>/
 [ -z "$BITBUCKET_TOKEN" ] && echo "BITBUCKET_TOKEN_MISSING=yes"
 [ -z "$BITBUCKET_USER"  ] && echo "BITBUCKET_USER_MISSING=yes"
 
+# Uncommitted changes check
+UNCOMMITTED_COUNT=$(
+  { git -C "$REPO_ROOT" diff --name-only; git -C "$REPO_ROOT" diff --cached --name-only; } \
+  | grep -v '\.claude/\|locale/' | sort -u | wc -l | tr -d ' '
+)
+echo "UNCOMMITTED_COUNT=$UNCOMMITTED_COUNT"
+
 echo "REPO=$REPO_NAME"
 echo "BRANCH=$CURRENT_BRANCH"
 echo "TICKET_ID=${TICKET_ID:-none}"
@@ -80,6 +87,16 @@ echo "BASE_BRANCH_PLAN=${BASE_BRANCH_PLAN:-none}"
 - **REPO_NAME = omg-docker** → *"omg-docker is on GitLab — create the PR manually."* Stop.
 - **BITBUCKET_TOKEN_MISSING = yes** → *"BITBUCKET_TOKEN is not set. Add it to ~/.zshrc and restart the shell."* Stop.
 - **BITBUCKET_USER_MISSING = yes** → *"BITBUCKET_USER is not set. Add it to ~/.zshrc and restart the shell."* Stop.
+
+**If UNCOMMITTED_COUNT > 0**, warn before continuing:
+```
+⚠️  You have <UNCOMMITTED_COUNT> uncommitted file(s). These will NOT be included in the PR.
+
+Recommended workflow: commit and push first, then re-run /pr.
+Create PR from current pushed state anyway? (yes / no)
+```
+- **no** → Stop. *"Commit your changes, push, then re-run /pr."*
+- **yes** → proceed (PR will only reflect pushed commits).
 
 If TICKET_ID = none: note it — PR will be created without ticket content; title derived from branch name.
 
