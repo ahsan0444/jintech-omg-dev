@@ -5,7 +5,10 @@ The Python `/verify` skill reads this file and shells into the Node harness in t
 developers as the app evolves. The harness reports back ONLY via exit code + a tiny result
 file (`<DATA>/.verify/out/<feature>.result.json`); it never dumps page DOM or stdout payloads.
 
-`<DATA>` = `$AGENT_OS_HOME/<repo data>` — for `omg` that is `~/.agent-os/omg`.
+`<DATA>` = `$AGENT_OS_HOME/<repo data>` — for `omg` that is `~/.agent-os/omg` (macOS/Linux) or
+`%USERPROFILE%\.agent-os\omg` (Windows). The `node …` commands below are identical on all
+platforms; run them from the harness dir (`$CLAUDE_PLUGIN_ROOT/servers/verify` —
+`$env:CLAUDE_PLUGIN_ROOT\servers\verify` on Windows).
 
 > **Self-healing deps.** Every entry script calls `ensureDeps()` first: if the harness
 > `node_modules` is missing (e.g. right after a `/plugin update` re-cloned the cache), it runs

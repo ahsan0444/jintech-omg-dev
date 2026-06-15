@@ -232,13 +232,19 @@ Run once per machine:
 
 This scaffolds the data home, builds the product graph, installs the Playwright harness, and walks you through capturing an authenticated session. The data-home scaffold + a full step-by-step setup guide live in a separate repo — see **[jintech-agent-os](https://github.com/ahsan0444/jintech-agent-os)** — which you clone to `~/.agent-os` and fill with your environment's (non-secret) registry facts. Secrets (`.env.local`, captured auth state) are gitignored and never committed.
 
-**The exact files you edit and commands you run are spelled out in that repo's README + `docs/`** (a "Manual configuration" checklist — nothing is left implicit). In short:
+**The exact files you edit and commands you run are spelled out in that repo's README + `docs/`** (a "Manual configuration" checklist — nothing is left implicit, with macOS/Linux **and** Windows commands). In short:
 
-1. `git clone …/jintech-agent-os ~/.agent-os`
-2. `cp config.yml.example config.yml` → set `repo_root` (and `db_repo_root`) to your checkout.
-3. Edit `~/.agent-os/<repo>/registry/env` for your environment (`BASE_URL`, `RESTART_CMD`, `RESTART_CMD_FALLBACK` compose path, `APP_CONTAINER`, `HEALTH_URL`). Defaults target the Jintech `britvic` sandbox.
-4. `/agent-os-setup` (installs harness deps + browsers, builds the product graph).
-5. `node "$CLAUDE_PLUGIN_ROOT/servers/verify/capture-auth.mjs" --repo <repo>` → complete SSO once.
+1. Clone the data home:
+   - macOS/Linux: `git clone …/jintech-agent-os ~/.agent-os`
+   - Windows (PS): `git clone …/jintech-agent-os $HOME\.agent-os`
+2. Copy + edit `config.yml` → set `repo_root` (and `db_repo_root`):
+   - macOS/Linux: `cp config.yml.example config.yml`
+   - Windows (PS): `Copy-Item config.yml.example config.yml`
+3. Edit `<data-home>/<repo>/registry/env` for your environment (`BASE_URL`, `RESTART_CMD`, `RESTART_CMD_FALLBACK` compose path, `APP_CONTAINER`, `HEALTH_URL`). Defaults target the Jintech `britvic` sandbox.
+4. `/agent-os-setup` (installs harness deps + browsers, builds the product graph) — same on all platforms.
+5. Capture SSO once:
+   - macOS/Linux: `node "$CLAUDE_PLUGIN_ROOT/servers/verify/capture-auth.mjs" --repo <repo>`
+   - Windows (PS): `node "$env:CLAUDE_PLUGIN_ROOT\servers\verify\capture-auth.mjs" --repo <repo>`
 
 Prereqs: Node 18+, the dev app running locally, access to your environment's host. **No manual `npm install` after plugin updates** — the verify harness self-heals (`ensureDeps()` runs `npm ci` automatically if its `node_modules` is missing on a freshly-cloned cache).
 
@@ -261,16 +267,20 @@ its plugins install by name (`<plugin>@claude-plugins-official`) with no `market
 /plugin install atlassian@claude-plugins-official
 #    then authenticate the Atlassian MCP when prompted (OAuth via claude.ai)
 
-# 3. Bitbucket credentials for /pr (shell rc — see "Set required environment variables" above)
-export BITBUCKET_USER="…"; export BITBUCKET_TOKEN="…"   # app password, PR read/write scope only
+# 3. Bitbucket credentials for /pr — see "Set required environment variables" above for the
+#    full macOS/Linux (export, ~/.zshrc) AND Windows (PowerShell $env: / System env) forms.
+#    macOS/Linux:  export BITBUCKET_USER="…"; export BITBUCKET_TOKEN="…"
+#    Windows (PS): $env:BITBUCKET_USER="…"; $env:BITBUCKET_TOKEN="…"
 ```
 
 ```bash
-# 4. Postgres MCP — DB lookups used by /db-script and investigations.
+# 4. Postgres MCP — DB lookups used by /db-script and investigations (same on all platforms).
 #    Connection string = your local omg-docker Postgres (defaults shown).
 claude mcp add postgres --scope user -- \
   npx -y @modelcontextprotocol/server-postgres postgresql://pgdev:pgdev@localhost:5432/OMG
 ```
+> `/plugin …`, `claude mcp add …`, `npx …`, and `node …` are identical on macOS, Linux, and
+> Windows. Only shell-specific bits differ (env vars, `cp`→`Copy-Item`, `~`→`$HOME`, paths).
 
 ### Recommended
 
