@@ -1,0 +1,21 @@
+{
+  "name": "agent-os-verify-harness",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deterministic Node verify harness for the Agent OS /verify skill. Cross-platform (macOS + Windows), Node 18+ built-in fetch, no axios.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "capture-auth": "node capture-auth.mjs --repo omg",
+    "restart": "node restart.mjs --repo omg",
+    "restart:check": "node restart.mjs --repo omg --check-only",
+    "auth:validate": "node auth.mjs validate --repo omg",
+    "tier1": "node tier1.mjs --repo omg"
+  },
+  "dependencies": {
+    "@playwright/test": "1.49.1",
+    "js-yaml": "4.1.0"
+  }
+}

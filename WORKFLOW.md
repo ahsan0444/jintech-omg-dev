@@ -7,17 +7,20 @@ flowchart LR
     GM["/grill-me\nSpec interview"]
     TK["/ticket\nInvestigation\n+ Plan"]
     IM["/implement\nCode changes"]
+    VF["/verify\nAutonomous proof\n(tiered, assertion-based)"]
     PR_["/prepr\nPre-PR audit"]
     PR["/pr\nDraft PR"]
 
     GM -->|"optional handoff\n(fresh session)"| TK
     TK -->|"approved plan\nsaved to .planning/"| IM
-    IM -->|"changes on branch"| PR_
+    IM -->|"changes on branch"| VF
+    VF -->|"STATUS: PASS\n(assertion exercises the change)"| PR_
     PR_ -->|"no blockers"| PR
 
     style GM fill:#e8f4fd,stroke:#4a9ede
     style TK fill:#e8f4fd,stroke:#4a9ede
     style IM fill:#e8f4fd,stroke:#4a9ede
+    style VF fill:#e8fdf0,stroke:#3cae6e
     style PR_ fill:#e8f4fd,stroke:#4a9ede
     style PR fill:#e8f4fd,stroke:#4a9ede
 ```
@@ -50,9 +53,17 @@ flowchart TD
         IM --> CL
     end
 
+    subgraph S3b["Session 3b (verify)"]
+        VF["/verify\nTrust core: tiered, assertion-based"]
+        SP["~/.agent-os/<repo>/specs/<feature>.spec.mjs\n(regression, persisted)"]
+        CL -->|"changes on branch"| VF
+        VF -->|"authors + reuses"| SP
+    end
+
     subgraph S4["Session 4"]
         PP["/prepr\nAudit orchestrator"]
         AM["~/.claude/.../memory/antipatterns.md"]
+        VF -->|"STATUS: PASS"| PP
         PP -->|"blockers → appends"| AM
     end
 
@@ -64,6 +75,7 @@ flowchart TD
     style S1 fill:#f0f8e8,stroke:#7cb87c
     style S2 fill:#e8f4fd,stroke:#4a9ede
     style S3 fill:#fff3e0,stroke:#e6a020
+    style S3b fill:#e8fdf0,stroke:#3cae6e
     style S4 fill:#fde8e8,stroke:#de4a4a
     style S5 fill:#f3e8fd,stroke:#9e4ade
 ```

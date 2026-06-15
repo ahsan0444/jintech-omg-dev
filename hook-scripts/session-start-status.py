@@ -7,8 +7,10 @@ Exits 0 silently if no graph DB exists — safe for any project on any OS.
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
+import time
 
 
 def get_project_root(start_dir):
@@ -22,12 +24,79 @@ def get_project_root(start_dir):
         return ''
 
 
+def _agentos_data_dir(project_root):
+    """Resolve the Agent OS data dir for a repo from ~/.agent-os/config.yml.
+
+    Stdlib-only line parse (hooks run on system python without pyyaml). The
+    config is a simple list of {name, repo_root, data} items.
+    """
+    home = os.path.abspath(os.path.expanduser(
+        os.environ.get('AGENT_OS_HOME', '~/.agent-os')))
+    cfg = os.path.join(home, 'config.yml')
+    if not project_root or not os.path.exists(cfg):
+        return ''
+    pr = os.path.realpath(project_root)
+    items, cur = [], {}
+    try:
+        with open(cfg, 'r') as f:
+            for raw in f:
+                line = raw.strip()
+                if line.startswith('- '):
+                    if cur:
+                        items.append(cur)
+                    cur = {}
+                    line = line[2:].strip()
+                if ':' in line and not line.startswith('#'):
+                    k, _, v = line.partition(':')
+                    v = v.strip()
+                    if ' #' in v:            # strip inline YAML comment
+                        v = v[:v.index(' #')].strip()
+                    cur[k.strip()] = v
+        if cur:
+            items.append(cur)
+    except Exception:
+        return ''
+    for it in items:
+        rr = it.get('repo_root', '')
+        if rr and os.path.realpath(os.path.expanduser(rr)) == pr:
+            data = it.get('data') or it.get('name') or ''
+            return os.path.join(home, data) if data else ''
+    return ''
+
+
+def print_product_graph_status(project_root):
+    """Print product-graph freshness for the active repo, if a product.db exists."""
+    data_dir = _agentos_data_dir(project_root)
+    if not data_dir:
+        return
+    db = os.path.join(data_dir, '.product-graph', 'product.db')
+    if not os.path.exists(db):
+        return
+    try:
+        conn = sqlite3.connect(db)
+        rows = conn.execute(
+            "SELECT type, COUNT(*) FROM nodes GROUP BY type").fetchall()
+        conn.close()
+        counts = {t: n for t, n in rows}
+        age_days = (time.time() - os.path.getmtime(db)) / 86400.0
+        built = 'today' if age_days < 1 else f'{int(age_days)}d ago'
+        summary = ', '.join(
+            f"{counts.get(k, 0)} {k}s" for k in ('route', 'template', 'design_token', 'feature'))
+        print(f'[agent-os] product-graph: {summary} (built {built}). '
+              f'Query via mcp__plugin_jintech-omg-dev_product-graph__pg_* tools.')
+    except Exception:
+        pass
+
+
 def main():
     try:
         data = json.load(sys.stdin)
     except Exception:
         data = {}
     cwd = data.get('cwd') or os.getcwd()
+
+    # Product-graph freshness — independent of CRG; prints only if a product.db exists.
+    print_product_graph_status(get_project_root(cwd))
 
     plugin_root = os.environ.get(
         'CLAUDE_PLUGIN_ROOT',

@@ -43,6 +43,16 @@
             "timeout": 60
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*(code-review-graph|product-graph)__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hook-scripts/run-hook.py\" record-graph-empty",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionStart": [

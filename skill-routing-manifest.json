@@ -3,27 +3,47 @@
   "intents": [
     {
       "id": "pr-create",
-      "patterns": ["\\b(create|raise|open|draft)\\s+(a\\s+)?pr\\b"],
+      "patterns": [
+        "\\b(create|raise|open|draft)\\s+(a\\s+)?pr\\b"
+      ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:pr"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:pr"
+      }
     },
     {
       "id": "pr-update",
-      "patterns": ["\\bupdate\\b.*\\bpr\\b(?!.*description says)"],
+      "patterns": [
+        "\\bupdate\\b.*\\bpr\\b(?!.*description says)"
+      ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:pr"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:pr"
+      }
     },
     {
       "id": "pr-rebase",
-      "patterns": ["\\brebase\\b.*\\b(pr|branch|onto)\\b"],
+      "patterns": [
+        "\\brebase\\b.*\\b(pr|branch|onto)\\b"
+      ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:pr"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:pr"
+      }
     },
     {
       "id": "pr-comments-address",
-      "patterns": ["\\b(address|respond to|handle)\\b.*\\b(pr|review)\\s+comments?\\b"],
+      "patterns": [
+        "\\b(address|respond to|handle)\\b.*\\b(pr|review)\\s+comments?\\b"
+      ],
       "confidence": "high",
-      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/pr-address-comments.md"}
+      "action": {
+        "type": "inline",
+        "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/pr-address-comments.md"
+      }
     },
     {
       "id": "pr-comments-fetch",
@@ -32,19 +52,32 @@
         "\\bshow\\b.*\\bpr\\b.*\\bcomments?\\b"
       ],
       "confidence": "high",
-      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/pr-fetch-comments.md"}
+      "action": {
+        "type": "inline",
+        "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/pr-fetch-comments.md"
+      }
     },
     {
       "id": "ticket-investigate",
-      "patterns": ["\\b(investigate|look into|work on|start on)\\b.*\\bticket\\b"],
+      "patterns": [
+        "\\b(investigate|look into|work on|start on)\\b.*\\bticket\\b"
+      ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:ticket"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:ticket"
+      }
     },
     {
       "id": "ticket-id-direct",
-      "patterns": ["\\bOMGXI-[0-9]+\\b(?!.*already|.*finished|.*fixed|.*closed)"],
+      "patterns": [
+        "\\bOMGXI-[0-9]+\\b(?!.*already|.*finished|.*fixed|.*closed)"
+      ],
       "confidence": "low",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:ticket"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:ticket"
+      }
     },
     {
       "id": "ticket-status",
@@ -53,19 +86,32 @@
         "\\bticket\\b.*\\bstatus\\b"
       ],
       "confidence": "high",
-      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/ticket-status.md"}
+      "action": {
+        "type": "inline",
+        "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/ticket-status.md"
+      }
     },
     {
       "id": "ticket-comment",
-      "patterns": ["\\b(add|post)\\b.*\\b(comment|note)\\b.*\\bticket\\b"],
+      "patterns": [
+        "\\b(add|post)\\b.*\\b(comment|note)\\b.*\\bticket\\b"
+      ],
       "confidence": "high",
-      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/ticket-comment.md"}
+      "action": {
+        "type": "inline",
+        "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/ticket-comment.md"
+      }
     },
     {
       "id": "ticket-transition",
-      "patterns": ["\\b(transition|move|set)\\b.*\\bticket\\b.*\\b(in.?progress|done|review|to.?do)\\b"],
+      "patterns": [
+        "\\b(transition|move|set)\\b.*\\bticket\\b.*\\b(in.?progress|done|review|to.?do)\\b"
+      ],
       "confidence": "high",
-      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/ticket-transition.md"}
+      "action": {
+        "type": "inline",
+        "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/ticket-transition.md"
+      }
     },
     {
       "id": "implement",
@@ -74,7 +120,10 @@
         "\\b(start|begin)\\b.*\\bimplementing\\b(?!.*don't|.*not yet)"
       ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:implement"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:implement"
+      }
     },
     {
       "id": "prepr",
@@ -85,7 +134,10 @@
         "\\b(check|audit)\\b.*\\bbefore\\b.*\\b(the\\s+|a\\s+)?pr\\b"
       ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:prepr"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:prepr"
+      }
     },
     {
       "id": "debug",
@@ -94,7 +146,10 @@
         "\\bsomething.?s broken\\b(?!.*was|.*before)"
       ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:debug"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:debug"
+      }
     },
     {
       "id": "grill-me",
@@ -103,19 +158,32 @@
         "\\bstress.?test.*plan\\b"
       ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:grill-me"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:grill-me"
+      }
     },
     {
       "id": "code-review",
-      "patterns": ["\\breview\\b.*\\b(diff|code|branch|changes)\\b"],
+      "patterns": [
+        "\\breview\\b.*\\b(diff|code|branch|changes)\\b"
+      ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "code-review"}
+      "action": {
+        "type": "skill",
+        "skill": "code-review"
+      }
     },
     {
       "id": "verify",
-      "patterns": ["\\bverify\\b.*\\b(works?|change|fix|this)\\b(?!.*can you|.*does it)"],
+      "patterns": [
+        "\\bverify\\b.*\\b(works?|change|fix|this)\\b(?!.*can you|.*does it)"
+      ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "verify"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:verify"
+      }
     },
     {
       "id": "git-branch-summary",
@@ -124,25 +192,43 @@
         "\\bwhat.*changed\\b.*\\bbranch\\b"
       ],
       "confidence": "high",
-      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/git-branch-summary.md"}
+      "action": {
+        "type": "inline",
+        "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/git-branch-summary.md"
+      }
     },
     {
       "id": "session-resume",
-      "patterns": ["\\b(resume|continue|pick up)\\b.*\\b(session|where)\\b"],
+      "patterns": [
+        "\\b(resume|continue|pick up)\\b.*\\b(session|where)\\b"
+      ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:resume-session"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:resume-session"
+      }
     },
     {
       "id": "session-save",
-      "patterns": ["\\b(save|record)\\b.*\\b(session|progress|where we)\\b"],
+      "patterns": [
+        "\\b(save|record)\\b.*\\b(session|progress|where we)\\b"
+      ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "jintech-omg-dev:save-session"}
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:save-session"
+      }
     },
     {
       "id": "commit",
-      "patterns": ["\\b(commit\\b.*\\bthis|write.*commit.*message|make.*commit)\\b(?!.*don't|.*not yet)"],
+      "patterns": [
+        "\\b(commit\\b.*\\bthis|write.*commit.*message|make.*commit)\\b(?!.*don't|.*not yet)"
+      ],
       "confidence": "high",
-      "action": {"type": "skill", "skill": "caveman:caveman-commit"}
+      "action": {
+        "type": "skill",
+        "skill": "caveman:caveman-commit"
+      }
     },
     {
       "id": "help-skills",
@@ -153,7 +239,10 @@
         "\\bavailable.*commands\\b"
       ],
       "confidence": "low",
-      "action": {"type": "inline", "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/help-skills.md"}
+      "action": {
+        "type": "inline",
+        "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/help-skills.md"
+      }
     }
   ]
 }

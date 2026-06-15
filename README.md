@@ -3,7 +3,7 @@
 [![CI](https://github.com/ahsan0444/jintech-omg-dev/actions/workflows/ci.yml/badge.svg)](https://github.com/ahsan0444/jintech-omg-dev/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/ahsan0444/jintech-omg-dev)](https://github.com/ahsan0444/jintech-omg-dev/releases)
 
-Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipeline, the code-review-graph MCP server, and enforcement hooks into a single installable unit.
+Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipeline, the code-review-graph MCP server, an autonomous verify trust core (product-graph + scripted assertion-based testing), and enforcement hooks into a single installable unit.
 
 **Supports macOS, Linux, and Windows** (CI-tested on ubuntu and windows).
 
@@ -15,15 +15,18 @@ Claude Code plugin for Jintech OMG development. Bundles the full SDLC skill pipe
 |---|---|
 | `/ticket` | Investigates a Jira ticket via subagents, produces a Plan Mode proposal |
 | `/implement` | Executes an approved plan via subagents with TDD and layer compliance |
+| `/verify` | **Autonomous trust core** — proves a change does what it should (or reports NOT done with evidence). Tiered (cheap curl-first → scripted headless Playwright), assertion-based, never a green status on unverified work. See [Agent OS](#agent-os) below. |
 | `/prepr` | Pre-PR audit: Perl::Critic, OMG layer conventions, TT/JS/SQL/SCSS |
 | `/pr` | Creates a Bitbucket draft PR, posts PR link back to Jira |
 | `/grill-me` | Stress-tests a design/plan before /ticket runs |
 | `/debug` | Root cause analysis — traces, ranks hypotheses, routes to /implement or /ticket |
-| `code-review-graph` MCP | Semantic graph of 9k+ nodes, 78k+ edges across the OMG codebase — 14 tools wired into skills |
-| Hooks | `skill-router` (UserPromptSubmit), `enforce-mcp-search` + `enforce-skill-usage` (PreToolUse), `post-edit-update` (PostToolUse), `session-start-status` (SessionStart) — all registered automatically via `hooks/hooks.json` |
+| `/agent-os-setup` | One-time per-machine bootstrap for the verify workflow (data home, registry, Playwright harness, auth capture). Cross-platform, idempotent. |
+| `code-review-graph` MCP | Semantic graph of code **structure** (50k+ nodes across the OMG codebase) — 14 tools wired into skills |
+| `product-graph` MCP | Semantic graph of product **behaviour** — routes, Template Toolkit inventory/includes, SCSS design tokens, registered features. Tools: `pg_feature`, `pg_selectors`, `pg_route`, `pg_design_tokens`, `pg_query`. Complements (does not duplicate) code-review-graph. |
+| Hooks | `skill-router` (UserPromptSubmit), `enforce-mcp-search` + `enforce-skill-usage` (PreToolUse), `post-edit-update` + `record-graph-empty` (PostToolUse), `session-start-status` (SessionStart) — all registered automatically via `hooks/hooks.json` |
 | Commands | `/learn`, `/save-session`, `/resume-session`, `/embed-graph`, `/router-stats` |
 | Routing manifest | `skill-routing-manifest.json` — regex intents → skills/inline procedures (see Hooks below) |
-| Agents | `omg-investigator` (read-only locator — no Read/Edit/Write tools, MCP-graph-first) and `omg-implementer` (single-step executor — OMG layer rules + TDD baked into its system prompt). Skills spawn these instead of generic `Explore`/`general-purpose`, turning "no file reads in subagents" from a prompt rule into a tool permission. |
+| Agents | `omg-investigator` (read-only locator — no Read/Edit/Write tools, MCP-graph-first), `omg-implementer` (single-step executor — OMG layer rules + TDD baked in), and `omg-verifier` (isolated /verify executor — runs the harness, judges by assertions, bounded impl-only self-fix). Skills spawn these instead of generic `Explore`/`general-purpose`, turning "no file reads in subagents" from a prompt rule into a tool permission. |
 
 ---
 
@@ -136,10 +139,12 @@ Skills are invoked by short name within an active OMG project session:
 /grill-me OMGXI-1234     # optional pre-investigation alignment
 /ticket OMGXI-1234        # investigate + produce approved plan
 /implement                # execute the approved plan
+/verify <feature>         # autonomously prove the change works (assertion-based)
 /prepr                    # pre-PR audit
 /prepr fix                # audit + auto-fix warnings
 /pr                       # create Bitbucket draft PR
 /debug OMGXI-1234         # root cause analysis
+/agent-os-setup           # one-time per-machine setup for /verify
 ```
 
 Or with the fully-qualified plugin namespace from any directory:
@@ -159,6 +164,8 @@ Or with the fully-qualified plugin namespace from any directory:
     ↓  saves .planning/approved-plan-TICKET.md
 /implement (Session 3)
     ↓  deletes approved-plan after completion
+/verify (Session 3b)
+    ↓  STATUS: PASS — assertion exercises the change
 /prepr (Session 4)
     ↓  no blockers
 /pr (Session 5)
@@ -203,6 +210,32 @@ Adjust `-WorkingDirectory` to match your OMG checkout path.
 
 ---
 
+## Agent OS
+
+Two layers on top of the SDLC pipeline:
+
+1. **Product-knowledge graph** (`product-graph` MCP) — what the product *does* and *looks like*: routes (`OMG*.pm`), Template Toolkit inventory/includes, SCSS design tokens, and a hand-editable **registry** of features. Complements `code-review-graph` (code structure); never duplicates it.
+2. **Autonomous verify trust core** (`/verify` + `omg-verifier`) — tiered, assertion-based, never false-done:
+   - **Tier 1** (always, cheap): dev-server restart + readiness probe + `curl` endpoint asserts. Backend-only changes stop here.
+   - **Tier 2** (when the diff touches `.tt`/`.scss`/`.js` or a UI route): a **scripted headless Playwright** spec (selectors/URL pulled from the graph + registry). Result = exit code + a tiny result file; the page never enters the model's context. Specs persist as regression tests.
+   - **Definition of Done**: a passing assertion that exercises THE CHANGE — not "app loaded". On failure: behavioral → leave server up + edits intact + alert; infrastructural → revert to last-known-good + alert. Self-fix is implementation-only (a spec-tamper guard rejects any run that modified the test).
+
+**The plugin ships the engine** (MCP server, skill, agent, harness under `servers/`). **Per-product data** (registry, auth, specs) lives outside any production repo in a data home at `~/.agent-os/`.
+
+### Setup
+
+Run once per machine:
+
+```
+/agent-os-setup
+```
+
+This scaffolds the data home, builds the product graph, installs the Playwright harness, and walks you through capturing an authenticated session. The data-home scaffold + a full step-by-step setup guide live in a separate repo — see **[jintech-agent-os](https://github.com/ahsan0444/jintech-agent-os)** — which you clone to `~/.agent-os` and fill with your environment's (non-secret) registry facts. Secrets (`.env.local`, captured auth state) are gitignored and never committed.
+
+Prereqs: Node 18+, the dev app running locally, and access to your environment's host. See the Agent OS repo README for the detailed walkthrough.
+
+---
+
 ## Hooks
 
 All hooks register automatically from `hooks/hooks.json` when the plugin is enabled. Every hook fails open — a broken or missing script never blocks your tools.
@@ -210,10 +243,11 @@ All hooks register automatically from `hooks/hooks.json` when the plugin is enab
 | Hook | Event | What it does |
 |---|---|---|
 | `skill-router` | UserPromptSubmit | Matches natural-language prompts against `skill-routing-manifest.json` and injects a routing instruction (e.g. "create a PR" → `/pr`). Kill switch: `export CLAUDE_SKILL_ROUTER_DISABLED=1`. Override the manifest by copying it to `~/.claude/skill-routing-manifest.json` or setting `SKILL_ROUTER_MANIFEST_OVERRIDE`. Prefix a prompt with `\` to bypass routing once. |
-| `enforce-mcp-search` | PreToolUse (Grep/Bash) | Denies grep inside `lib/`, `public/javascripts/`, `t/` of a repo with a built code-review-graph — directs Claude to MCP tools instead. `views/` is exempt. |
+| `enforce-mcp-search` | PreToolUse (Grep/Bash) | **Steerable**, self-releasing: defaults grep inside `lib/` and `public/javascripts/` to the code-review-graph, but sanctions grep for literal/multi-word patterns, when the graph is stale (build SHA ≠ HEAD), and after a graph query for the same target returned empty (a one-shot, query-scoped breadcrumb). `views/` is exempt. A single source's silence is a proposal, not proof. |
 | `enforce-skill-usage` | PreToolUse (Bash) | Denies `gh pr create` (OMG uses Bitbucket) and points to `/pr`. |
-| `post-edit-update` | PostToolUse (Edit/Write) | Incremental `code-review-graph update` after source-file edits. Skips docs/config edits. |
-| `session-start-status` | SessionStart | Prints graph health (node count, staleness) into context at session start. |
+| `post-edit-update` | PostToolUse (Edit/Write) | Incremental `code-review-graph update` after source edits; also rebuilds the **product-graph** on `.tt`/`.scss`/`OMG*.pm` edits. Skips docs/config edits. |
+| `record-graph-empty` | PostToolUse (MCP graph tools) | Records a query-scoped breadcrumb when a code-review-graph / product-graph query returns empty, so `enforce-mcp-search` can sanction one follow-up grep for that target (TTL 15 min). |
+| `session-start-status` | SessionStart | Prints code-review-graph health (node count, staleness) **and** product-graph status (routes/templates/tokens/features) into context at session start. |
 
 > **Permissions template:** `settings.json` at the plugin root is a *template* — Claude Code does not load it from a plugin. Copy its `permissions.allow` block into your project's `.claude/settings.json` to pre-approve the read-only Bash and MCP calls the skills make.
 

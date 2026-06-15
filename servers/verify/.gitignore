@@ -1,0 +1,2 @@
+node_modules/
+# Note: package-lock.json is intentionally committed (pinned, reproducible installs).

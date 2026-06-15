@@ -1,7 +1,7 @@
 {
   "name": "jintech-omg-dev",
-  "description": "Jintech OMG development toolkit — SDLC skills (/ticket, /implement, /prepr, /pr, /grill-me, /debug) + code-review-graph MCP server + enforcement hooks",
-  "version": "1.2.4",
+  "description": "Jintech OMG development toolkit — SDLC skills (/ticket, /implement, /verify, /prepr, /pr, /grill-me, /debug) + code-review-graph & product-graph MCP servers + autonomous verify trust core + enforcement hooks",
+  "version": "1.3.0",
   "author": {
     "name": "Jintech Engineering",
     "email": "ahsan.zaheer@jintech.com"
@@ -9,11 +9,15 @@
   "homepage": "https://github.com/ahsan0444/jintech-omg-dev",
   "repository": "https://github.com/ahsan0444/jintech-omg-dev",
   "license": "UNLICENSED",
-  "keywords": ["omg", "perl", "sdlc", "jira", "bitbucket", "code-review-graph"],
+  "keywords": ["omg", "perl", "sdlc", "jira", "bitbucket", "code-review-graph", "product-graph", "verify", "agent-os"],
   "mcpServers": {
     "code-review-graph": {
       "command": "python3",
       "args": ["${CLAUDE_PLUGIN_ROOT}/servers/start-crg.py"]
+    },
+    "product-graph": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/servers/start-product-graph.py"]
     }
   }
 }
