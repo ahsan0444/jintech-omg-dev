@@ -11,12 +11,16 @@
 //
 // NEVER logs cookie values or any storageState contents.
 
+// Static imports: node built-ins + dependency-free locals only. Everything that needs
+// node_modules (registry -> js-yaml, @playwright/test) is imported after ensureDeps().
 import { existsSync } from 'node:fs';
-import { chromium } from '@playwright/test';
-import { loadRepo } from './lib/registry.mjs';
 import { parseArgs } from './lib/args.mjs';
+import { ensureDeps } from './lib/preflight.mjs';
 
 async function main() {
+  ensureDeps();
+  const { chromium } = await import('@playwright/test');
+  const { loadRepo } = await import('./lib/registry.mjs');
   const args = parseArgs();
   const repoName = args.repo || 'omg';
   const repo = loadRepo(repoName);

@@ -12,15 +12,19 @@
 // NOTE: requires a Chromium browser binary (npx playwright install) which is handled by
 // /agent-os-setup, not by this harness.
 
+// Static imports: node built-ins + dependency-free locals only. Everything that needs
+// node_modules (registry -> js-yaml, @playwright/test) is imported after ensureDeps().
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { chromium } from '@playwright/test';
-import { loadRepo } from './lib/registry.mjs';
 import { parseArgs } from './lib/args.mjs';
+import { ensureDeps } from './lib/preflight.mjs';
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 async function main() {
+  ensureDeps();
+  const { chromium } = await import('@playwright/test');
+  const { loadRepo } = await import('./lib/registry.mjs');
   const args = parseArgs();
   const repoName = args.repo || 'omg';
   const repo = loadRepo(repoName);

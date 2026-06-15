@@ -232,7 +232,15 @@ Run once per machine:
 
 This scaffolds the data home, builds the product graph, installs the Playwright harness, and walks you through capturing an authenticated session. The data-home scaffold + a full step-by-step setup guide live in a separate repo — see **[jintech-agent-os](https://github.com/ahsan0444/jintech-agent-os)** — which you clone to `~/.agent-os` and fill with your environment's (non-secret) registry facts. Secrets (`.env.local`, captured auth state) are gitignored and never committed.
 
-Prereqs: Node 18+, the dev app running locally, and access to your environment's host. See the Agent OS repo README for the detailed walkthrough.
+**The exact files you edit and commands you run are spelled out in that repo's README + `docs/`** (a "Manual configuration" checklist — nothing is left implicit). In short:
+
+1. `git clone …/jintech-agent-os ~/.agent-os`
+2. `cp config.yml.example config.yml` → set `repo_root` (and `db_repo_root`) to your checkout.
+3. Edit `~/.agent-os/<repo>/registry/env` for your environment (`BASE_URL`, `RESTART_CMD`, `RESTART_CMD_FALLBACK` compose path, `APP_CONTAINER`, `HEALTH_URL`). Defaults target the Jintech `britvic` sandbox.
+4. `/agent-os-setup` (installs harness deps + browsers, builds the product graph).
+5. `node "$CLAUDE_PLUGIN_ROOT/servers/verify/capture-auth.mjs" --repo <repo>` → complete SSO once.
+
+Prereqs: Node 18+, the dev app running locally, access to your environment's host. **No manual `npm install` after plugin updates** — the verify harness self-heals (`ensureDeps()` runs `npm ci` automatically if its `node_modules` is missing on a freshly-cloned cache).
 
 ---
 

@@ -12,13 +12,15 @@
 // /agent-os-setup, not by this harness. If absent, the spec run fails and is reported
 // as a FAIL with the missing-browser message as `observed`.
 
+// Static imports MUST be node built-ins + dependency-free local modules only (args, preflight).
+// Anything that pulls in node_modules (registry -> js-yaml, result -> registry) is imported
+// DYNAMICALLY after ensureDeps(), so the harness can self-install on a fresh post-update cache.
 import { spawn } from 'node:child_process';
-import { readFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, rmSync, copyFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadRepo, outDir } from './lib/registry.mjs';
-import { writeResult } from './lib/result.mjs';
 import { parseArgs } from './lib/args.mjs';
+import { ensureDeps } from './lib/preflight.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -70,6 +72,9 @@ function firstFailure(report) {
 }
 
 async function main() {
+  ensureDeps();
+  const { loadRepo, outDir } = await import('./lib/registry.mjs');
+  const { writeResult } = await import('./lib/result.mjs');
   const args = parseArgs();
   const repoName = args.repo || 'omg';
   const feature = args.feature;
@@ -90,16 +95,25 @@ async function main() {
   const reportFile = path.join(evidenceDir, `${feature}.pw-report.json`);
   if (existsSync(reportFile)) { try { rmSync(reportFile); } catch { /* ignore */ } }
 
+  // Run the spec from INSIDE the harness tree so its `import '@playwright/test'` resolves
+  // against the harness node_modules — no version-pinned symlink in the data home needed.
+  // The spec is fully env-driven (PG_OUT_DIR etc.), so its location does not matter.
+  const tmpDir = path.join(__dirname, '.verify-tmp');
+  mkdirSync(tmpDir, { recursive: true });
+  const tmpSpec = path.join(tmpDir, path.basename(spec));
+  copyFileSync(spec, tmpSpec);
+
   const childEnv = {
     ...process.env,
-    PG_SPEC_DIR: path.dirname(spec),
+    PG_SPEC_DIR: tmpDir,
     PG_BASE_URL: env.BASE_URL,
     PG_STORAGE_STATE: repo.authStateFile,
     PG_OUT_DIR: evidenceDir,
     PG_REPORT_FILE: reportFile,
   };
 
-  const { code, stderr } = await runPlaywright(spec, childEnv);
+  const { code, stderr } = await runPlaywright(tmpSpec, childEnv);
+  try { rmSync(tmpSpec, { force: true }); } catch { /* ignore */ }
 
   // Parse the JSON report if present.
   let report = null;

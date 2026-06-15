@@ -7,6 +7,12 @@ file (`<DATA>/.verify/out/<feature>.result.json`); it never dumps page DOM or st
 
 `<DATA>` = `$AGENT_OS_HOME/<repo data>` — for `omg` that is `~/.agent-os/omg`.
 
+> **Self-healing deps.** Every entry script calls `ensureDeps()` first: if the harness
+> `node_modules` is missing (e.g. right after a `/plugin update` re-cloned the cache), it runs
+> `npm ci` once, automatically. You never have to manually reinstall after an update. Browser
+> binaries are global (`~/ms-playwright`) and survive updates. Specs are copied into the harness
+> tree at run time, so no `node_modules` symlink is needed in the data home.
+
 ---
 
 ## 1. Restart after a backend change
@@ -41,7 +47,7 @@ READY requires **both**:
 The harness replays a captured Playwright `storageState`; it never drives the IdP.
 
 ```
-node auth.mjs validate --repo omg
+node auth.mjs --repo omg
 ```
 
 - exit 0 `AUTH_OK` — session live, proceed.
@@ -53,10 +59,10 @@ The session token / cookies are PRIVATE: never logged, never screenshotted, neve
 
 ## 4. Navigate to the feature test URL
 
-Test URLs come from the feature registry (`<DATA>/registry/features/<feature>.yml`).
-For `jobs-deliverable-chooser` the planning-jobs URL is built from
-`test_path_template: /campaigns/${TEST_CAMPAIGN_ID}/jobs` — set `TEST_CAMPAIGN_ID` in
-`<DATA>/registry/.env.local`, or let verify discover and propose one.
+Entry + navigation come from the feature registry (`<DATA>/registry/features/<feature>.yml`).
+Verification enters at the authenticated `BASE_URL` landing page and the spec DISCOVERS the
+entity it needs by navigating the UI (e.g. landing → a campaign → its planning jobs grid). No
+hardcoded entity ids. Live-confirmed nav facts are proposed into `<DATA>/registry/.pending/`.
 
 - Tier 1 (no browser): `node tier1.mjs --repo omg --feature <feature> [--endpoint /path --expect status:200|redirect:/x]`
 - Tier 2 (browser): `node run-spec.mjs --repo omg --feature <feature> --spec <path-to-spec>`
