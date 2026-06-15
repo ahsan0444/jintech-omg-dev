@@ -244,6 +244,73 @@ Prereqs: Node 18+, the dev app running locally, access to your environment's hos
 
 ---
 
+## Companion plugins, MCP servers & tools
+
+The plugin works on its own, but the full workflow expects a few companions. Commands below
+are copy-paste. The **official Anthropic marketplace is auto-installed** in Claude Code, so
+its plugins install by name (`<plugin>@claude-plugins-official`) with no `marketplace add`.
+
+### Required
+
+```bash
+# 1. This plugin (its own marketplace)
+/plugin marketplace add https://github.com/ahsan0444/claude-marketplace
+/plugin install jintech-omg-dev
+
+# 2. Atlassian — Jira reads for /ticket, /pr, and the issue-tracker skill
+/plugin install atlassian@claude-plugins-official
+#    then authenticate the Atlassian MCP when prompted (OAuth via claude.ai)
+
+# 3. Bitbucket credentials for /pr (shell rc — see "Set required environment variables" above)
+export BITBUCKET_USER="…"; export BITBUCKET_TOKEN="…"   # app password, PR read/write scope only
+```
+
+```bash
+# 4. Postgres MCP — DB lookups used by /db-script and investigations.
+#    Connection string = your local omg-docker Postgres (defaults shown).
+claude mcp add postgres --scope user -- \
+  npx -y @modelcontextprotocol/server-postgres postgresql://pgdev:pgdev@localhost:5432/OMG
+```
+
+### Recommended
+
+```bash
+# Greenfield UI lane (frontend-design skill referenced by Agent OS)
+/plugin install frontend-design@claude-plugins-official
+
+# context7 — third-party library docs (CLAUDE.md routes lib internals here, not file reads)
+/plugin install context7@claude-plugins-official
+
+# Jam — bug repro capture for /debug (HTTP MCP; authenticate in browser)
+claude mcp add --transport http Jam https://mcp.jam.dev/mcp
+```
+
+### Optional / personal (safe to skip — not required by any skill)
+
+These are in the maintainer's setup but **not** needed for the OMG workflow:
+
+| Tool | What it is | Install |
+|---|---|---|
+| `caveman` | Token-compression response style | `/plugin marketplace add JuliusBrussee/caveman` → `/plugin install caveman@caveman` |
+| `superpowers` | General-purpose skill pack | `/plugin install superpowers@claude-plugins-official` |
+| `claude-code-setup` | Setup-recommender skill | `/plugin install claude-code-setup@claude-plugins-official` |
+| RTK (Rust Token Killer) | Personal CLI proxy hook | external binary — maintainer-only, ignore |
+| Figma / Stitch / Canva MCPs | Design connectors | via `/plugin` or claude.ai connectors, as needed |
+
+### Host tools / libraries
+
+| Tool | Required? | Notes |
+|---|---|---|
+| Node 18+ | ✅ | verify harness (Playwright) |
+| Python 3.12+ | ✅ | code-review-graph + product-graph (plugin-local venv) |
+| Podman + podman-compose | ✅ | the OMG dev container + `/verify` restart/readiness |
+| `omg-docker` checkout | ✅ | the compose project the container runs from |
+| Git | ✅ | repos + PR flow |
+| Perl::Critic | — | **not** a host install — the `perlcritic` skill runs it inside the omg Podman container |
+| Playwright browsers | auto | `/agent-os-setup` installs them; harness self-heals node_modules after updates |
+
+---
+
 ## Hooks
 
 All hooks register automatically from `hooks/hooks.json` when the plugin is enabled. Every hook fails open — a broken or missing script never blocks your tools.
