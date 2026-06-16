@@ -53,6 +53,8 @@ Run directly in main context (the **only** permitted direct Bash call):
 REPO_ROOT=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null)
 PLAN_FILES=$(ls "$REPO_ROOT/.planning/approved-plan-"*.md 2>/dev/null)
 PLAN_COUNT=$(echo "$PLAN_FILES" | grep -c '\.md' 2>/dev/null || echo 0)
+SKILL_DIR=$(ls -d ~/.claude/plugins/cache/jintech-claude-marketplace/jintech-omg-dev/*/skills/implement 2>/dev/null | sort -V | tail -1)
+[ -z "$SKILL_DIR" ] && SKILL_DIR="/Users/Shared/Code/jintech-omg-dev/skills/implement"
 echo "REPO=$(basename $REPO_ROOT) | PLANS=$PLAN_COUNT"
 [ -n "$PLAN_FILES" ] && echo "$PLAN_FILES"
 ```
@@ -138,28 +140,9 @@ Agent(
   Replace with:
   <replacement from plan>
 
-  OMG LAYER RULES (pull these when your file matches):
-  - dao (lib/<area>/dao/*_db.pm): the ONLY layer that touches the database.
-    Returns unblessed hashes/arrays only — no bless(), no ->new() in returns.
-    All DB access goes through PostgreSQL stored functions with bound params:
-    database->prepare('SELECT * FROM <function_name>(?, ?)') + execute(@binds).
-    Never build SQL by string interpolation. There is no ORM — no DBIC, no
-    Rose::DB; never write ->create/->find/->update style calls.
-  - dom (lib/<area>/dom/*_dom.pm): Moo-based domain object (use Moo — not Moose,
-    not hand-rolled bless). Must have sub TO_JSON { return { %{ shift() } }; }.
-    No DB access in this layer.
-  - helper (*_helper.pm): business logic; orchestrates dao + dom. Sole public API
-    for this module — no foreign _controller-> calls, no foreign _db-> calls, and
-    no direct database-> calls (DB access is the dao's job).
-  - controller (*_controller.pm): Dancer2 route handlers only — calls helpers and
-    renders/returns. No business logic, no database-> calls, no foreign
-    _controller-> calls, no direct _db imports.
-  - i18n (when the edit adds or changes a user-facing string in a .tt template or
-    JS file): use the Locale::Wolowitz helper — `<% l('key_name') %>` in TT, the
-    JS translation helper in JS (`OMG.l('key_name')` / `localText.<key>` — match
-    the surrounding code's form). Add the key to ALL locale files:
-    locale/default/en.json, es.json, fr.json, ja.json, pt.json, pt-br.json,
-    zh-cn.json. Never hardcode display text.
+  (OMG layer rules enforced by omg-implementer agent type — not repeated here.
+   Fallback to general-purpose: Read("$SKILL_DIR/references/omg-layer-rules.md") and
+   insert its full contents at this position in the prompt.)
 
   INSTRUCTIONS:
   1. Grep for the unique string to find the exact current line number
@@ -302,6 +285,66 @@ If RISK_TIER is high: surface in Step 3 report under "Semantic Risk — review b
 If clean: log "Layer check: clean" — do not echo in report.
 
 Skip this step if no .pm files were changed.
+
+---
+
+## Step 2c — Spec Generation (Sonnet, general-purpose — runs after Step 2b when UI changed)
+
+**Trigger:** Run this step only when the change includes `.tt`, `.css`, or `.js` files, OR a route file (`OMG*.pm`) that feeds a UI route. Skip entirely for backend-only changes.
+
+**Purpose:** Ensure `/verify` has a runnable Playwright spec before the session ends. A spec written now (with full plan context) is far cheaper than one authored cold in a verify session.
+
+**Feature slug:** derive from the ticket ID + plan description. Use kebab-case. Examples:
+- OMGXI-10073 "deliverable chooser" → `jobs-deliverable-chooser`
+- OMGXI-10112 "apply template modal" → `apply-deliverable-template-modal`
+
+**Skip condition:** If `~/.agent-os/omg/specs/<feature-slug>.spec.mjs` already exists AND the changed files are all in the same area as the existing spec (no new UI surface), log "Spec exists — skipped" and proceed to Step 3.
+
+Before building the subagent prompt: `Read("$SKILL_DIR/references/playwright-spec-template.md")` and replace `<SPEC_TEMPLATE>` in the prompt below with the full file contents.
+
+Spawn:
+
+```
+Agent(
+  description="Generate Playwright spec for <feature-slug>",
+  subagent_type="general-purpose",
+  model="sonnet",
+  prompt="""
+  Write a Playwright Tier-2 spec for the feature just implemented.
+
+  TICKET: <TICKET_ID>
+  FEATURE SLUG: <feature-slug>   (kebab-case, e.g. "jobs-deliverable-chooser")
+  REPO ROOT: <REPO_ROOT>
+  DATA DIR: ~/.agent-os/omg
+
+  ACCEPTANCE CRITERIA (from the approved plan):
+  <paste the Definition of Done checklist from the plan>
+
+  CHANGED UI FILES:
+  <list .tt / .js / .scss files from the change log>
+
+  CHANGED ROUTES (from the plan, or grep `OMG*.pm` changes):
+  <list affected URL patterns e.g. /campaigns/:id/jobs>
+
+  ── SPEC REQUIREMENTS ──
+
+  <SPEC_TEMPLATE>
+
+  Return ONLY the schema below. No prose, no preamble.
+
+  STATUS: written | skipped | failed
+  SPEC_PATH: <absolute path written, or "none">
+  REGISTRY_PATH: <absolute path written, or "none">
+  ASSERTIONS_COUNT: <number of expect() calls in the spec>
+  ISSUE: <problem if failed, else "none">
+  """
+)
+```
+
+After subagent returns:
+- `STATUS: written` → log "Spec generated: `<SPEC_PATH>`" in the Step 3 report. Spec is ready for `/verify`.
+- `STATUS: skipped` → log "Spec exists — skipped".
+- `STATUS: failed` → log "Spec generation failed: `<ISSUE>`" as a WARNING in Step 3 report. Does NOT block /prepr.
 
 ---
 

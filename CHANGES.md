@@ -1,3 +1,25 @@
+# CHANGES — jintech-omg-dev 1.3.1 → 1.3.2 (implement skill — extract reference files)
+
+Reduces `implement/SKILL.md` by 113 lines (503 → 390, −22%) by extracting two large inline
+blocks to on-demand reference files:
+
+- **`skills/implement/references/omg-layer-rules.md`** — OMG Perl layer rules (dao/dom/helper/
+  controller/i18n). Were inlined unconditionally in every implementer subagent prompt despite
+  being redundant — `omg-implementer` agent type has these rules baked into its system prompt.
+  Fallback note left in SKILL.md for `general-purpose` agent usage.
+
+- **`skills/implement/references/playwright-spec-template.md`** — Playwright Tier-2 spec JS
+  template + selector strategy + YAML registry format. Was loaded unconditionally on every
+  `/implement` run. Now loaded only when Step 2c triggers (UI changes present);
+  backend-only runs skip it entirely.
+
+Added SKILL_DIR detection to the Step 0 bash block — tries plugin cache first
+(`~/.claude/plugins/cache/jintech-claude-marketplace/jintech-omg-dev/*/skills/implement`,
+sorted by version, latest wins), falls back to dev repo path — enabling reference file loading
+by absolute path from either install location.
+
+---
+
 # CHANGES — jintech-omg-dev 1.2.3 → 1.2.4 (plugin agent namespace fix)
 
 All skills referenced plugin agents as bare `omg-investigator` / `omg-implementer`.
