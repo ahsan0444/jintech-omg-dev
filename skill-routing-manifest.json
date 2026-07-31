@@ -231,6 +231,19 @@
       }
     },
     {
+      "id": "pgmustard",
+      "patterns": [
+        "\\bpg.?mustard\\b",
+        "\\b(run|do)\\b.*\\bquery\\s+plan\\s+review\\b",
+        "\\banalyz(e|ing)\\b.*\\b(query\\s+plan|explain)\\b"
+      ],
+      "confidence": "high",
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:pgmustard"
+      }
+    },
+    {
       "id": "help-skills",
       "patterns": [
         "\\bwhat skills\\b",
