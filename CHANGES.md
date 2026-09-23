@@ -1,3 +1,13 @@
+# CHANGES — jintech-omg-dev 1.5.0 → 1.5.1 (eval-driven trigger fixes, guardrail repo detection)
+
+First `claude plugin eval` run: 7/10, mean Δ +0.50, $1.94. Fixes:
+- **`skills/figma-omg`** — description leads with the trigger; `argument-hint` quoted. Eval now fires (Δ +1.00).
+- **`skills/prepr`** — description adds "review their branch, diff or changes before raising a PR". Fired on rerun (single run; watch for flakiness).
+- **`evals/`** — grill-me case flipped to must-not-fire (`disable-model-invocation: true` by design); `evals/results/` untracked and git-ignored.
+- **`hook-scripts/git-guardrails.py`** — resolves the target repo from `cd <dir>` and `git -C <dir>` within the command (it used the session cwd, so pushes to opted-out solo repos were blocked); splits chains on newlines too. 3 tests added.
+
+---
+
 # CHANGES — jintech-omg-dev 1.4.0 → 1.5.0 (learning loop + guardrails)
 
 - **`agents/omg-implementer.md`, `agents/omg-verifier.md`** — `memory: local` (per-agent notes in `<project>/.claude/agent-memory-local/`, git-ignored). Verifier lists `Write` explicitly (tools allowlist can block memory writes, anthropics/claude-code#57507). Investigator left without memory: it would gain full Read/Write and lose its no-file-reads guarantee.

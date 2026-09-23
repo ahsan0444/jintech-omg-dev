@@ -1,6 +1,6 @@
 ---
 name: prepr
-description: Pre-PR review — audits all branch changes against OMG coding standards. Runs Perl::Critic for Perl files, checks OMG layer conventions, validates templates, JS, and DB scripts. Reports blockers vs warnings before a PR is raised.
+description: Use when the user asks to review their branch, diff or changes before raising a PR. Pre-PR review — audits all branch changes against OMG coding standards. Runs Perl::Critic for Perl files, checks OMG layer conventions, validates templates, JS, and DB scripts. Reports blockers vs warnings before a PR is raised.
 ---
 
 # /prepr

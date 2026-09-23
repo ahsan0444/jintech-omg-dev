@@ -366,6 +366,26 @@ class TestGitGuardrails(unittest.TestCase):
         args.append(branch)
         subprocess.run(args, check=True, capture_output=True)
 
+    def _opted_out_repo(self):
+        parent = tempfile.mkdtemp(prefix="guardrail-parent-")
+        self.addCleanup(shutil.rmtree, parent, True)
+        repo = os.path.join(parent, "jintech-omg-dev")
+        subprocess.run(["git", "init", "-q", repo], check=True, capture_output=True)
+        return repo
+
+    def test_cd_into_opted_out_repo_then_push_main_allowed(self):
+        repo = self._opted_out_repo()
+        cmd = f"cd {repo} && git commit -qam x\ngit push -q origin main"
+        self.assertEqual(self.mod.evaluate_command(cmd, self.repo), "")
+
+    def test_git_dash_c_opted_out_repo_push_main_allowed(self):
+        repo = self._opted_out_repo()
+        self.assertEqual(self.mod.evaluate_command(f"git -C {repo} push origin main", self.repo), "")
+
+    def test_newline_chained_push_to_master_denied(self):
+        reason = self.mod.evaluate_command("echo hi\ngit push origin master", self.repo)
+        self.assertIn("protected branch", reason)
+
     def test_force_push_dash_f_denied(self):
         reason = self.mod.evaluate_command("git push -f origin feature/x", self.repo)
         self.assertIn("Force push", reason)

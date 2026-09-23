@@ -80,7 +80,7 @@ def split_segments(command):
     """
     if not command:
         return []
-    parts = re.split(r'&&|\|\||;|\|', command)
+    parts = re.split(r'&&|\|\||;|\||\n', command)
     return [p.strip() for p in parts if p.strip()]
 
 
@@ -267,9 +267,24 @@ def evaluate_segment(segment, cwd):
     return ""
 
 
+def effective_cwd(tokens, cwd):
+    """Directory a segment acts on: `cd <dir>` changes it, `git -C <dir>` overrides it."""
+    if tokens and tokens[0] == "cd" and len(tokens) > 1:
+        return os.path.normpath(os.path.join(cwd or ".", os.path.expanduser(tokens[1])))
+    if is_git_command(tokens) and "-C" in tokens:
+        i = tokens.index("-C")
+        if i + 1 < len(tokens):
+            return os.path.normpath(os.path.join(cwd or ".", os.path.expanduser(tokens[i + 1])))
+    return cwd
+
+
 def evaluate_command(command, cwd):
     for segment in split_segments(command):
-        reason = evaluate_segment(segment, cwd)
+        tokens = tokenize(segment)
+        if tokens and tokens[0] == "cd":
+            cwd = effective_cwd(tokens, cwd)
+            continue
+        reason = evaluate_segment(segment, effective_cwd(tokens, cwd))
         if reason:
             return reason
     return ""

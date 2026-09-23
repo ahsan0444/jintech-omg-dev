@@ -1,7 +1,7 @@
 ---
 name: figma-omg
-description: Implement a Figma design/frame/node as OMG code — Perl Dancer2 + Template Toolkit .tt + jQuery + Bootstrap 3.3.5 + per-client SCSS + Bryntum widgets. Trigger when the user wants to implement, build, or match a Figma design/frame/node inside the OMG repo, or pastes a figma.com URL in the context of OMG work.
-argument-hint: [figma URL or TICKET-ID]
+description: Use when the user wants to implement, build or match a Figma design, frame, node or figma.com URL in the OMG repo. Maps Figma values to existing OMG SCSS tokens (Template Toolkit, jQuery, Bootstrap 3, per-client themes, Bryntum), checks theme conflicts, and writes a design spec for /verify.
+argument-hint: "[figma URL or TICKET-ID]"
 disable-model-invocation: false
 ---
 
