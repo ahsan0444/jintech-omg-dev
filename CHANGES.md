@@ -1,3 +1,12 @@
+# CHANGES — jintech-omg-dev 1.3.2 → 1.3.3 (sync with mattpocock/skills c55ee46)
+
+Ports upstream improvements from [mattpocock/skills](https://github.com/mattpocock/skills) (HEAD `c55ee46`, 2026-09-18). OMG machinery (Jira MCP, `.planning/grill-<TICKET>.md`, `/ticket` handoff, subagent routing) unchanged.
+
+- **`skills/grill-me/SKILL.md`** — adopts upstream `grilling` frontier-round format: ask every unblocked question in one numbered round with `❓ Q` / `➡️` recommended answers, instead of strictly one at a time. Facts are looked up by haiku subagents without blocking the rest of the round. Reads `CONTEXT.md`/ADRs before round 1. Now `disable-model-invocation: true` (user-invoked via `/grill-me` only), matching upstream and avoiding overlap with the standalone `grilling` skill.
+- **`skills/debug/SKILL.md`** — from upstream `diagnosing-bugs`: Redact ground rule for JAM/console/psql/curl output; CONTEXT.md/ADR grep in Step 2a; hypotheses must state a falsifiable prediction; ranked list shown to user before Step 4 verification.
+
+---
+
 # CHANGES — jintech-omg-dev 1.3.1 → 1.3.2 (implement skill — extract reference files)
 
 Reduces `implement/SKILL.md` by 113 lines (503 → 390, −22%) by extracting two large inline

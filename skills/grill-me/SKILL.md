@@ -1,20 +1,36 @@
 ---
 name: grill-me
 description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me". Saves output to .planning/ for /ticket to auto-load.
+disable-model-invocation: true
 ---
 
 # /grill-me [TICKET-ID]
 
-Interview me relentlessly about every aspect of this plan until
-we reach a shared understanding. Walk down each branch of the design
-tree resolving dependencies between decisions one by one.
+Interview me relentlessly until we reach a shared understanding. Map the plan as a **design tree**: every decision branches into the decisions that hang off it.
 
-If a question can be answered by exploring the codebase, explore
-the codebase instead. Use MCP tools in haiku subagents — lower token cost and faster orientation.
+Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for my answers before the next round.
 
-For each question, provide your recommended answer.
+Format a round like so:
 
-Use haiku subagents for all codebase exploration to keep main context clean.
+```
+❓ **Q1** - **<question title>**: <question body, may include multiple choices>
+
+➡️ <your recommended answer>
+
+---
+
+❓ **Q2** - **<question title>**: <question body>
+
+➡️ <your recommended answer>
+```
+
+Each answered round reshapes the tree: recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a later round.
+
+Finding _facts_ is your job, never mine. If a frontier question needs a fact from the codebase, DB, or Jira, dispatch a haiku subagent (MCP tools first) instead of asking. Don't block on it: only questions downstream of a running exploration wait; ask the rest of the frontier now. The _decisions_ are mine: put each to me and wait.
+
+Read `CONTEXT.md` (if it exists) and any ADRs in the area before round 1.
+
+The session is done when the frontier is empty: every branch visited, nothing silently assumed. Do not act on it until I confirm shared understanding.
 
 ---
 
