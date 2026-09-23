@@ -190,6 +190,32 @@ Read `references/check-prompts.md` once (one Read covers all five templates), th
 | 1d | scss/css | direct CSS edits, import order, !important |
 | 1e | sql | naming, rollback pair, live DB validation |
 
+## Step 1f — plpgsql_check (conditional — dbscripts deploy functions only)
+
+Run only if changed files include `dbscripts/**/deploy/*.sql` that `CREATE OR REPLACE FUNCTION` / `CREATE FUNCTION`.
+
+Check availability first (local Postgres, container `postgres_db`, DB `OMG`, user `pgdev`):
+
+```bash
+podman exec postgres_db psql -U pgdev -d OMG -Atc "SELECT name FROM pg_available_extensions WHERE name='plpgsql_check'"
+```
+
+- **Empty result** → not installed. Report once: *"plpgsql_check not installed — skipped. Install hint: package `postgresql-<ver>-plpgsql-check` in the container image."* Skip the rest of this step.
+- **Returns `plpgsql_check`** → extension is available but may not be created yet. Creating it (`CREATE EXTENSION IF NOT EXISTS plpgsql_check`) is a schema change on the local dev DB — do not run it yourself. Ask the user once:
+  > *"plpgsql_check is available but not enabled on the local dev DB. Enable it now (`CREATE EXTENSION IF NOT EXISTS plpgsql_check`)? (yes / no)"*
+  - **no** → skip this step, note "plpgsql_check declined by user" in the report.
+  - **yes** → run the `CREATE EXTENSION IF NOT EXISTS plpgsql_check` statement, then continue.
+
+For each changed function (`schema.fn(args)` parsed from the `CREATE OR REPLACE FUNCTION` signature in the deploy script):
+
+```bash
+podman exec postgres_db psql -U pgdev -d OMG -c "SELECT * FROM plpgsql_check_function('<schema.fn(args)>')"
+```
+
+Errors in the result → BLOCKER. Warnings → WARNING. Merge into Step 3 synthesis same as other buckets.
+
+---
+
 ## Step 2 — Perl Test Suite (conditional — after Step 1 completes)
 
 Run **only after all Step 1 subagents have returned** and **only if Perl files were changed**.
@@ -215,6 +241,52 @@ Agent(
   """
 )
 ```
+
+---
+
+## Step 2b — Blind Reviewer (Sonnet, general-purpose — fresh context)
+
+Spawn after Step 2, in parallel with nothing else (needs the diff + AC only — no plan, no change log, no conversation history).
+
+```bash
+BASE_REF="origin/${BASE_BRANCH}"
+DIFF=$(git -C "$REPO_ROOT" diff "$BASE_REF"...HEAD 2>/dev/null)
+```
+
+If no ticket AC was fetched earlier this session, fetch it now (Jira via MCP, same lookup Step 0 would use) or ask the user for the acceptance criteria before spawning.
+
+```
+Agent(
+  description="Blind pre-PR review — fresh context",
+  subagent_type="general-purpose",
+  model="sonnet",
+  prompt="""
+  You have NO other context on this change — only what follows. Do not assume anything
+  about intent beyond it.
+
+  ACCEPTANCE CRITERIA:
+  <AC text>
+
+  DIFF (git diff <BASE_BRANCH>...HEAD):
+  <DIFF>
+
+  Review the diff against the acceptance criteria only. Find:
+  - AC items not covered by the diff
+  - Behaviour regressions the diff introduces
+  - Missing states/edge cases (empty, error, loading, permission-denied)
+  - Security issues: interpolated SQL (vs bound params), unescaped TT output (XSS), missing permission checks on routes
+
+  Return ONLY the schema below. No prose, no preamble.
+
+  AC_GAPS: <file:line — uncovered criterion, or "none">
+  REGRESSIONS: <file:line — issue, or "none">
+  MISSING_STATES: <file:line — issue, or "none">
+  SECURITY: <file:line — issue, or "none">
+  """
+)
+```
+
+Merge every non-"none" line into the Step 3 report, tagged `[blind-review]`, as a BLOCKER (security, regressions) or WARNING (AC gaps, missing states).
 
 ---
 

@@ -451,7 +451,27 @@ Read `references/update-existing-pr.md` and follow it exactly: extract PR_ID, ch
 
 ---
 
-## Step 9 — Multi-repo Note (conditional)
+## Step 9 — Learn (after PR created/updated)
+
+Review this session for user corrections (things the user had to redirect or fix) and non-obvious discoveries. Skip silently if nothing qualifies.
+
+For each candidate: check `~/.claude/projects/<project-slug>/memory/MEMORY.md` and its linked files. If it matches an existing file's topic, propose an update to that file; otherwise propose a new file + index entry.
+
+Show the user the proposed edits as one list (file, one-line summary of the change) before writing anything:
+
+```
+Memory updates from this session:
+1. <file> — <what changes>
+2. <new file: name> — <what it captures>
+
+Write these? (yes / no / pick numbers)
+```
+
+Only write the files (and MEMORY.md index) the user confirms.
+
+---
+
+## Step 10 — Multi-repo Note (conditional)
 
 If REPO_NAME = omg and the ticket SUMMARY contained DB-related keywords (table, schema, ALTER, migration, stored procedure, postgres):
 

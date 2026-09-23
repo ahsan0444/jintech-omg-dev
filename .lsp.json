@@ -1,0 +1,19 @@
+{
+  "perl": {
+    "command": "perlnavigator",
+    "args": ["--stdio"],
+    "extensionToLanguage": {
+      ".pl": "perl",
+      ".pm": "perl",
+      ".t": "perl",
+      ".psgi": "perl"
+    },
+    "transport": "stdio",
+    "initializationOptions": {
+      "includePaths": ["$workspaceFolder/lib"],
+      "perlcompileEnabled": false,
+      "perlcriticEnabled": false
+    },
+    "maxRestarts": 3
+  }
+}

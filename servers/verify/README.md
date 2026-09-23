@@ -45,6 +45,40 @@ Connection-refused / 502 / 504 / timeout = NOT ready.
 | `node tier1.mjs --repo omg --feature <f> [--endpoint /p --expect status:200\|redirect:/x]` | Tier 1, NO browser. Health probe + optional endpoint check. Writes result file, sets exit code. |
 | `node run-spec.mjs --repo omg --feature <f> --spec <path>` | Tier 2. Runs one Playwright spec as a child process (storageState + baseURL wired in), reduces to the result-file shape (first failing assertion + screenshot). |
 
+## Design check (Tier 2, opt-in)
+
+Runs only when `<DATA>/.verify/design/<feature>.design.json` exists (written by the figma-omg skill).
+
+```
+node design-check.mjs --repo omg --feature <f> [--spec <path>]
+```
+
+Spec: `{ url, viewport, elements:[{ selector, expect:{prop:val}, states:{ hover:{prop:val} } }], figma_screenshot? }`.
+Reads `getComputedStyle` per property (hover via `locator.hover()`); px ±1 per token, colours
+canonicalised by the browser (hex/named -> `rgb[a]()`), `font-family` = first family, quotes
+stripped, case-insensitive; anything else trimmed case-insensitive equality.
+Evidence in `<DATA>/.verify/out/<feature>.design/`: `full.png`, `el-<n>.png`, `figma.png` (copy
+for human side-by-side; no pixel diffing). Result `<feature>.design.result.json` adds
+`elements[].properties|states.<state>.<prop> = {expected, actual, pass}`.
+Exit 0 pass / 1 mismatch / 2 auth expired or missing / 4 bad spec.
+
+## Characterization snapshots (Tier 1)
+
+```
+node snapshot.mjs record  --repo omg --routes routes.txt --label base [--feature <f>]
+node snapshot.mjs record  --repo omg --routes /jobs,/campaigns --label base
+node snapshot.mjs compare --repo omg --label base [--feature <f>]
+```
+
+GET only (a `POST /x` line is refused, exit 4; off-host URLs refused). Uses the saved auth
+cookies via a Playwright request context (no browser), never follows redirects. Bodies are
+normalised by the `NORMALIZERS` table (CSRF tokens, session ids, ISO timestamps, epoch ms,
+`?v=` cache-busters) and stored in `<DATA>/.verify/snapshots/<label>/` (+ `manifest.json`);
+compare writes `<label>.current/` and diffs with `git diff --no-index`. Result
+`<feature>.snapshot.result.json` adds `routes[] = {route, status, changed, added, removed, head}`
+(`head` = first 40 diff lines). Exit 0 same / 1 diff / 2 auth / 4 usage. The script never touches
+git state — the caller stashes / checks out the base before `record`.
+
 ## Data resolution
 
 - `AGENT_OS_HOME` env (default `~/.agent-os`); reads `config.yml` -> `repos[].{name,repo_root,data}`.

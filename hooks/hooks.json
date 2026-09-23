@@ -45,6 +45,16 @@
         ]
       },
       {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hook-scripts/run-hook.py\" post-edit-lint",
+            "timeout": 25
+          }
+        ]
+      },
+      {
         "matcher": "mcp__.*(code-review-graph|product-graph)__",
         "hooks": [
           {

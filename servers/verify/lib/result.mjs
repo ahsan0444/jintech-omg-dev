@@ -3,13 +3,14 @@
 //
 // Schema:
 //   { status, tier, feature, failing_assertion, screenshot, observed, expected }
-// Path: <DATA>/.verify/out/<feature>.result.json
+// Path: <DATA>/.verify/out/<feature>[.<kind>].result.json
+// `kind` (design | snapshot) keeps sub-checks from clobbering the tier result; `extra` adds detail.
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { outDir } from './registry.mjs';
 
-export function writeResult(repo, feature, result) {
+export function writeResult(repo, feature, result, { kind = null, extra = null } = {}) {
   const dir = outDir(repo);
   mkdirSync(dir, { recursive: true });
   const payload = {
@@ -20,8 +21,9 @@ export function writeResult(repo, feature, result) {
     screenshot: result.screenshot ?? null,
     observed: result.observed ?? '',
     expected: result.expected ?? '',
+    ...(extra || {}),
   };
-  const file = path.join(dir, `${feature}.result.json`);
+  const file = path.join(dir, `${feature}${kind ? '.' + kind : ''}.result.json`);
   writeFileSync(file, JSON.stringify(payload, null, 2) + '\n', 'utf8');
   return file;
 }

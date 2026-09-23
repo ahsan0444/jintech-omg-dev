@@ -86,6 +86,32 @@ Wait for their decision before continuing.
 
 ---
 
+## Progress File
+
+`PROGRESS_FILE=$REPO_ROOT/.planning/progress-<TICKET_ID>.md` — the resumable record of this run (Anthropic long-running-agent pattern: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents). It replaces nothing — the change log in Step 1 stays.
+
+```bash
+[ -f "$PROGRESS_FILE" ] && cat "$PROGRESS_FILE" || echo "NO_PROGRESS_FILE"
+```
+
+- **Exists:** resume from it — list steps already marked `done`, then continue from its recorded "Next" step instead of restarting Step 1 from scratch.
+- **Missing:** create it now with the plan's step list, all `pending`.
+
+Format (keep additions under 30 lines total per update):
+```
+# Progress — <TICKET_ID>
+step 1: done — <file> — <one-line note>
+step 2: failed — <file> — <one-line note>
+step 3: pending
+Next: step 3
+```
+
+**Update after every step completes or fails** (before spawning the next): rewrite that step's line with its status (`done` / `failed` / `skipped`), files touched, and a one-line note, then update `Next:`.
+
+At Step 3 (final report), write the closing state: overall status plus `Next: /verify`.
+
+---
+
 ## Step 1 — Build Change Log and Audit Dependencies
 
 From the loaded plan, extract all implementation steps.
@@ -181,8 +207,9 @@ Agent(
 
 ### After each subagent returns:
 1. Update the change log: `step N: [file — summary — ✅/❌/partial]`
-2. `STATUS: success` → proceed to next step or group
-3. `STATUS: failed` or `partial` → trigger recovery
+2. Update `PROGRESS_FILE` (see Progress File above): step status, files touched, one-line note, `Next:`
+3. `STATUS: success` → proceed to next step or group
+4. `STATUS: failed` or `partial` → trigger recovery
 
 ---
 
@@ -368,6 +395,8 @@ TDD: <N steps had tests written | skipped — no test files found>
 Definition of Done:
   <paste checklist from the approved plan>
 ```
+
+Write the closing state to `PROGRESS_FILE`: overall status (complete / N blockers) plus `Next: /verify`.
 
 Clean up the handoff file:
 ```bash

@@ -256,6 +256,20 @@
         "type": "inline",
         "file": "${CLAUDE_PLUGIN_ROOT}/procedures/inline/help-skills.md"
       }
+    },
+    {
+      "id": "figma-implement",
+      "patterns": [
+        "figma\\.com\\/(file|design|proto|board)\\/",
+        "\\bimplement\\b.*\\b(this|the)\\b.*\\b(figma|design)\\b",
+        "\\bmatch\\b.*\\bfigma\\b",
+        "\\bbuild\\b.*\\bfigma\\s+(frame|node|design|component)\\b"
+      ],
+      "confidence": "low",
+      "action": {
+        "type": "skill",
+        "skill": "jintech-omg-dev:figma-omg"
+      }
     }
   ]
 }

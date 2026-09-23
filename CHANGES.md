@@ -1,3 +1,18 @@
+# CHANGES — jintech-omg-dev 1.3.4 → 1.4.0 (Figma pipeline, design verification, feedback hooks)
+
+- **`skills/figma-omg/`** (new) — Figma → OMG procedure: account/seat gate (`whoami`; View seats get 6 calls/month), node-scoped reads, screenshot kept, HTML+SCSS design context, per-variant variables, token mapping to existing SCSS vars via product-graph (never ship Figma var names), client-theme `!important` + Bryntum conflict scan, local assets, `.planning/figma-<TICKET>.md` plan with one question round, `/verify` design spec, per-client `build_sass.sh`. Router intent `figma-implement` (low).
+- **`servers/verify/design-check.mjs`** (new) — Tier 2 computed-style check against `<feature>.design.json` (±1px, colour normalisation, first font family, hover states) + element/full-page screenshots beside `figma.png`. No pixel diffing.
+- **`servers/verify/snapshot.mjs`** (new) — characterization snapshots: `record`/`compare` GET routes with auth, volatile content normalised; diffs reported as "behaviour changed — intended?".
+- **`skills/verify`, `agents/omg-verifier.md`** — when design/snapshot checks run; optional `/goal` loop within the existing attempt cap.
+- **`hook-scripts/post-edit-lint.py`** (new, PostToolUse) — in the `omg` podman container: `perl -c` + perlcritic ≥4 for `.pm/.pl/.t`, Template::Parser check for `.tt`; errors fed back via `decision: block`. Container dependency drift (module version mismatch) is ignored.
+- **`.lsp.json`** (new) — PerlNavigator LSP, navigation only (compile/critic off; host perl lacks OMG deps). Requires `npm install -g perlnavigator-server`.
+- **`skills/implement`** — `.planning/progress-<TICKET>.md` updated per step; resumes from it.
+- **`skills/prepr`** — Step 2b blind reviewer (diff + AC only); Step 1f `plpgsql_check` for changed functions (skips when extension missing).
+- **`skills/pr`** — Step 9 learn: proposes memory updates from session corrections, writes on confirm.
+- **`skills/overnight/`, `tools/overnight.sh`** (new, EMERGING) — bounded unattended loop in a worktree for locale/perlcritic backlog; never pushes; `--dry-run`.
+
+---
+
 # CHANGES — jintech-omg-dev 1.3.3 → 1.3.4 (router noise, tool names, Jira cloudId)
 
 - **`hook-scripts/skill-router.py`** — skips prompts not typed by the user (task notifications, `!` bash echoes, system text). Prompts over 500 chars get a soft hint instead of "MUST invoke", and skip low-confidence matching. Fixes routing on background-agent notifications (7 false routes in one session). 3 regression tests added.

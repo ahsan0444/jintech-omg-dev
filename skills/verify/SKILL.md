@@ -23,10 +23,19 @@ false-completion failure this skill exists to prevent).
 - **Backend-only** (.pm/.pl/.sql, and NO `.tt`/`.scss`/`.js` and not a UI-facing route via `pg_route`) → **Tier 1 only**.
 - **Touches `.tt`/`.scss`/`.js`, OR a route file (`OMG*.pm`) feeding a UI route** (graph maps changed file → affected routes) → **Tier 1 then Tier 2**.
 - Unsure → Tier 1+2 (bias to proof).
+- **Add-ons** (independent of the above, decided here, passed to the agent):
+  - **design** — `<data_dir>/.verify/design/<feature>.design.json` exists (written by the figma-omg skill) → run design check (Tier 2).
+  - **snapshot** — diff touches `.pm`/`.tt`/`OMG*.pm` AND the affected GET routes are identifiable (`pg_route`, feature YAML) → run characterization snapshots (Tier 1).
 
 ## 2. Run via the omg-verifier agent (isolated — diagnosis/self-fix churn stays out of main context)
 Before dispatch, if Tier 2: record sha256 of the feature's spec file → **SPEC-TAMPER GUARD**.
 Spawn `Agent(subagent_type="jintech-omg-dev:omg-verifier", model="sonnet", ...)` with repo/feature/tier/base/data_dir + resolved context. It runs the harness (restart → tier1 → auth → run-spec), judges by the result file, and on behavioral failure self-fixes (impl only, max 2). It returns the STATUS schema.
+
+**Snapshot baseline (orchestrator owns git, the script only fetches).** Before dispatch, if the
+snapshot add-on applies: `git stash -u` (or check out the base) → restart if `.pm` changed →
+`node snapshot.mjs record --repo <r> --routes <list> --label base --feature <f>` → `git stash pop`
+→ restart. Stash-pop failure → STOP, alert, do not continue. Include the design spec path and
+the snapshot label in the agent prompt; the agent runs `design-check.mjs` and `snapshot.mjs compare`.
 
 After the agent returns, if Tier 2: re-hash the spec file. **If it changed → REJECT the run** ("spec modified during self-fix"), treat as FAIL, alert. This makes "self-fix never edits the test" mechanical, not prompt-trust.
 
@@ -45,8 +54,24 @@ FAIL_BEHAVIORAL (app up, assertion failed after 2 self-fix attempts)
 AUTH (storageState expired/missing)
  └─ STOP → ALERT "re-capture auth: node servers/verify/capture-auth.mjs --repo <repo>".
 ```
+Add-ons:
+- **Design** (`<feature>.design.result.json`): any property mismatch = FAIL_BEHAVIORAL (self-fix
+  eligible; the design.json is a spec — same tamper guard, hash it too). Report per-property
+  expected/actual + `full.png`/`el-<n>.png`; if `figma.png` is present, point the user at it for
+  side-by-side review (no pixel diffing).
+- **Snapshot** (`<feature>.snapshot.result.json`): a diff is NOT an auto-fail. Report each changed
+  route (+/- counts, first diff lines) as **"behaviour changed — intended?"**. If the ticket intends
+  that change it is expected evidence; if not, treat as FAIL_BEHAVIORAL. Never self-fix a snapshot
+  diff without the user confirming it is unintended.
+
 Rules: alert BEFORE any revert; behavioral→leave intact, infra→revert; a self-fix edits
 implementation only; "app loaded" is never "done".
+
+## 3b. /goal loop (optional) — EMERGING
+For multi-attempt verification the orchestrator MAY run Claude Code's `/goal` with the condition
+`all tiered assertions in <feature>.result.json pass` (plus `.design`/`.snapshot` results when those
+add-ons ran). It does not lift the cap: max **2** self-fix attempts total, the spec-tamper guard
+and every §3 rule still apply; on hitting the cap, stop the goal and report the §3 status.
 
 ## 4. Alert
 Terminal summary + `PushNotification` (load via ToolSearch): `VERIFY <STATUS> <feature> — <assertion> — <screenshot>`. Compact; the full page never enters context.
