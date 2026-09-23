@@ -1,3 +1,13 @@
+# CHANGES — jintech-omg-dev 1.4.0 → 1.5.0 (learning loop + guardrails)
+
+- **`agents/omg-implementer.md`, `agents/omg-verifier.md`** — `memory: local` (per-agent notes in `<project>/.claude/agent-memory-local/`, git-ignored). Verifier lists `Write` explicitly (tools allowlist can block memory writes, anthropics/claude-code#57507). Investigator left without memory: it would gain full Read/Write and lose its no-file-reads guarantee.
+- **`hook-scripts/session-end-capture.py`** (new, SessionEnd) — collects correction-shaped user messages (redacted) into the project memory dir's `_pending-corrections.md`; raw input for the weekly consolidate-memory task, capped at 15/session and 400 lines.
+- **`hook-scripts/git-guardrails.py`** (new, PreToolUse Bash) — denies force-push, push/commit on `master`/`main`/`omg-s*` (env `GIT_GUARDRAIL_PROTECTED`; solo repos opted out via `GIT_GUARDRAIL_ALLOW_REPOS`), `reset --hard`, `clean -f`, `branch -D`; runs gitleaks on staged changes before `git commit` when installed.
+- **`skills/pr`** — Step 9 learn classifies each correction: fact → memory, skill wording → skill edit + skill-creator + `claude plugin eval`, mechanical rule → `/hookify`; folds in `_pending-corrections.md`.
+- **`evals/`** (new) — 10 routing/trigger cases for `claude plugin eval` (8 positive, 2 must-not-fire). Run from a clean clone: `servers/venv/` exceeds the eval scanner's 20k-entry limit.
+
+---
+
 # CHANGES — jintech-omg-dev 1.3.4 → 1.4.0 (Figma pipeline, design verification, feedback hooks)
 
 - **`skills/figma-omg/`** (new) — Figma → OMG procedure: account/seat gate (`whoami`; View seats get 6 calls/month), node-scoped reads, screenshot kept, HTML+SCSS design context, per-variant variables, token mapping to existing SCSS vars via product-graph (never ship Figma var names), client-theme `!important` + Bryntum conflict scan, local assets, `.planning/figma-<TICKET>.md` plan with one question round, `/verify` design spec, per-client `build_sass.sh`. Router intent `figma-implement` (low).

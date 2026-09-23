@@ -453,21 +453,26 @@ Read `references/update-existing-pr.md` and follow it exactly: extract PR_ID, ch
 
 ## Step 9 — Learn (after PR created/updated)
 
-Review this session for user corrections (things the user had to redirect or fix) and non-obvious discoveries. Skip silently if nothing qualifies.
+Review this session for user corrections (redirects/fixes) and non-obvious discoveries. Also read `~/.claude/projects/<project-slug>/memory/_pending-corrections.md` if present — fold its entries into this review, then clear it once its entries are written or declined. Skip silently if nothing qualifies.
 
-For each candidate: check `~/.claude/projects/<project-slug>/memory/MEMORY.md` and its linked files. If it matches an existing file's topic, propose an update to that file; otherwise propose a new file + index entry.
+Classify each candidate:
+- **FACT/preference** → memory file (existing behaviour): check `MEMORY.md` and linked files; propose an update or a new file + index entry.
+- **SKILL WORDING** (a skill triggered wrongly, missed a step, or gave bad instructions) → propose a concrete edit to that skill's SKILL.md, and add: "run anthropic-skills:skill-creator to optimize the description, then `claude plugin eval` before merging."
+- **ENFORCEABLE RULE** (something that must never happen again mechanically, e.g. a forbidden command) → suggest `/hookify` to turn it into a hook.
 
-Show the user the proposed edits as one list (file, one-line summary of the change) before writing anything:
+Show the user the proposed edits as one list (file, one-line summary) before writing anything:
 
 ```
 Memory updates from this session:
 1. <file> — <what changes>
 2. <new file: name> — <what it captures>
+3. <skill edit: skills/x/SKILL.md> — <change> — then skill-creator + eval
+4. <hook suggestion> — /hookify <rule>
 
 Write these? (yes / no / pick numbers)
 ```
 
-Only write the files (and MEMORY.md index) the user confirms.
+Only write (memory files, MEMORY.md index, or skill edits) what the user confirms. Never run `/hookify` automatically — surface it as a suggestion only.
 
 ---
 
