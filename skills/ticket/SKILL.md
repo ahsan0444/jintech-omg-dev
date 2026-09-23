@@ -133,7 +133,7 @@ Agent(
   prompt="""
   TOOL DISCOVERY: Atlassian MCP tool names vary by install (mcp__plugin_atlassian_atlassian__*, mcp__claude_ai_Atlassian__*, or mcp__atlassian__*). If a call fails with unknown tool, run ToolSearch(query="+jira <tool name>") and use the returned variant. Names below use the mcp__plugin_atlassian_atlassian__ prefix.
 
-  Use mcp__plugin_atlassian_atlassian__getJiraIssue to fetch <TICKET_ID>.
+  Use mcp__plugin_atlassian_atlassian__getJiraIssue to fetch <TICKET_ID> with cloudId="0f509bf7-cc73-4a8f-90c3-dafcd60ddbb4" (oliveruk site UUID; never pass the bare string "oliveruk").
 
   If it fails (wrong cloudId): call mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources,
   pick the correct cloudId, retry once. If it fails again, return:
@@ -227,20 +227,20 @@ Agent(
       3. Else: use most specific noun phrase from TITLE as term 1,
          and the verb+noun phrase describing the problem from SUMMARY as term 2.
 
-    mcp__code-review-graph__semantic_search_nodes_tool(query="<term 1>", detail_level="minimal", repo_root="<REPO_ROOT>")  ← 1 call
-    mcp__code-review-graph__semantic_search_nodes_tool(query="<term 2>", detail_level="minimal", repo_root="<REPO_ROOT>")  ← 1 call
+    mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool(query="<term 1>", detail_level="minimal", repo_root="<REPO_ROOT>")  ← 1 call
+    mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool(query="<term 2>", detail_level="minimal", repo_root="<REPO_ROOT>")  ← 1 call
 
     If node names are returned and callers are needed:
-    mcp__code-review-graph__query_graph_tool(pattern="callers_of", target="<node>", detail_level="minimal", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__query_graph_tool(pattern="callers_of", target="<node>", detail_level="minimal", repo_root="<REPO_ROOT>")
 
     If nodes are returned and the ticket involves multi-step logic or data flow:
-    mcp__code-review-graph__get_affected_flows_tool(node="<most relevant node>", repo_root="<REPO_ROOT>")  ← surfaces which execution flows the node participates in — informs impact scope
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_affected_flows_tool(node="<most relevant node>", repo_root="<REPO_ROOT>")  ← surfaces which execution flows the node participates in — informs impact scope
 
     If both searches return 0 results → broaden:
-    mcp__code-review-graph__traverse_graph_tool(query="<broader keyword>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__traverse_graph_tool(query="<broader keyword>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
 
     If DB=yes (ticket touches both app and database):
-    mcp__code-review-graph__cross_repo_search_tool(query="<entity name from ticket>", repo_roots=["<REPO_ROOT>", "<DB_COMPANION>"])
+    mcp__plugin_jintech-omg-dev_code-review-graph__cross_repo_search_tool(query="<entity name from ticket>", repo_roots=["<REPO_ROOT>", "<DB_COMPANION>"])
     → finds the same entity across omg + omg_db simultaneously
 
     If all MCP searches return 0 results AND the ticket is about Perl/JS logic → set CONFIDENCE: low. Do NOT fall back to grep.
@@ -325,11 +325,11 @@ Agent(
 
   PHASE 1 — Graph-based test lookup (MCP ONLY — use for JS/Python nodes only):
     For each key node identified (up to 2 nodes) where language is JS or Python:
-    mcp__code-review-graph__query_graph_tool(pattern="tests_for", target="<node name>", detail_level="minimal", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__query_graph_tool(pattern="tests_for", target="<node name>", detail_level="minimal", repo_root="<REPO_ROOT>")
     → returns test files that cover this node. If results found: STOP.
 
   PHASE 2 — Knowledge gap detection:
-    mcp__code-review-graph__get_knowledge_gaps_tool(repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_knowledge_gaps_tool(repo_root="<REPO_ROOT>")
     → surfaces functions/modules with no test coverage. Check if affected nodes appear in gaps.
 
   PHASE 3 — Grep fallback (always for Perl; fallback for JS/Python if Phase 1 empty):

@@ -92,8 +92,8 @@ Agent(
   HARD RULES: no file reads (sed/cat/Read/head/tail/less/more), no full-file greps (grep -n "." / grep -c ""), no find-then-read. Paths and line ranges only.
 
   MCP ONLY — grep is policy-blocked.
-  mcp__code-review-graph__traverse_graph_tool(query="<broader keyword>", mode="bfs", depth=3, repo_root="<REPO_ROOT>")
-  mcp__code-review-graph__semantic_search_nodes_tool(query="<alternative term>", detail_level="minimal", repo_root="<REPO_ROOT>")
+  mcp__plugin_jintech-omg-dev_code-review-graph__traverse_graph_tool(query="<broader keyword>", mode="bfs", depth=3, repo_root="<REPO_ROOT>")
+  mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool(query="<alternative term>", detail_level="minimal", repo_root="<REPO_ROOT>")
 
   **Exception — "absent by design":** If MCP searches return 0 results AND the ticket clearly describes adding something new (a new header, config value, route, or import that does not yet exist), that is a CONFIDENCE: high finding. Set CONFIDENCE: high and record the insertion point explicitly:
     - AFFECTED_FILES: <most logical insertion point based on DATA_FLOW> — grep: "(not present — new addition required)" — <reason this is the right location>

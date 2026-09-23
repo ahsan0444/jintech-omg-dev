@@ -156,7 +156,7 @@ Agent(
         For Perl: use find directly:
         Bash("find <REPO_ROOT>/t -name '*.t' -exec grep -l '<module_basename>' {} \\; 2>/dev/null | head -1")
         For JS/Python: try MCP first:
-        mcp__code-review-graph__query_graph_tool(pattern="tests_for", target="<module_basename>", detail_level="minimal", repo_root="<REPO_ROOT>")
+        mcp__plugin_jintech-omg-dev_code-review-graph__query_graph_tool(pattern="tests_for", target="<module_basename>", detail_level="minimal", repo_root="<REPO_ROOT>")
         If MCP returns a path: use it. Otherwise fall back to find.
         If no test file found: note "no existing test file — skip TDD for this step" and proceed to step 5.
      b. Add a failing test case to the test file (one assert that will FAIL until the change is made)
@@ -239,7 +239,7 @@ Agent(
   Repo root: <REPO_ROOT>
 
   PHASE 0 — Semantic risk check (run first, 1 call):
-    mcp__code-review-graph__detect_changes_tool(changed_files=["<file1>", "<file2>", ...], repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__detect_changes_tool(changed_files=["<file1>", "<file2>", ...], repo_root="<REPO_ROOT>")
     Report RISK_TIER from result. Flag any hub/bridge nodes as WARNING.
     If graph absent or tool errors: skip silently and continue to Phase 1.
 

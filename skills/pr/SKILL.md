@@ -220,12 +220,12 @@ Agent(
   Tool call budget: 3.
 
   PHASE 1 — Risk-score changed files:
-    mcp__code-review-graph__detect_changes_tool(changed_files=["<file1>", "<file2>", ...], repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__detect_changes_tool(changed_files=["<file1>", "<file2>", ...], repo_root="<REPO_ROOT>")
     If graph absent or tool errors: return RISK_TIER: unknown and stop.
 
   PHASE 2 — Affected flows (only for high-risk nodes from Phase 1):
     For the single highest-risk node:
-    mcp__code-review-graph__get_affected_flows_tool(node="<highest risk node>", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_affected_flows_tool(node="<highest risk node>", repo_root="<REPO_ROOT>")
     → returns execution flows this change participates in.
 
   Return schema only (no prose):
@@ -252,7 +252,7 @@ Agent(
   prompt="""
   Fetch Jira ticket <TICKET_ID>.
   TOOL DISCOVERY: Atlassian MCP tool names vary by install (mcp__plugin_atlassian_atlassian__*, mcp__claude_ai_Atlassian__*, or mcp__atlassian__*). If a call fails with unknown tool, run ToolSearch(query="+jira <tool name>") and use the returned variant. Names below use the mcp__plugin_atlassian_atlassian__ prefix.
-  First call mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources to get the cloudId.
+  cloudId is "0f509bf7-cc73-4a8f-90c3-dafcd60ddbb4" (oliveruk site UUID; never the bare string "oliveruk"). Only if that fails, call mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources.
   Then call mcp__plugin_atlassian_atlassian__getJiraIssue with that cloudId and issueIdOrKey="<TICKET_ID>".
   Do not retry more than once. If it fails return ERROR: <reason>.
 

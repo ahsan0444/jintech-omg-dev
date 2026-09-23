@@ -147,13 +147,13 @@ Agent(
   Tool call budget: 3.
 
   PHASE 1 — Risk-score every changed file:
-    mcp__code-review-graph__detect_changes_tool(changed_files=["<file1>", "<file2>", ...], repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__detect_changes_tool(changed_files=["<file1>", "<file2>", ...], repo_root="<REPO_ROOT>")
     Identifies hub nodes, bridge nodes, cross-community coupling, and risk scores.
     If graph.db is absent or tool errors: return RISK_TIER: unknown and stop.
 
   PHASE 2 — Blast radius (only for files that score high-risk in Phase 1):
     For each high-risk file:
-    mcp__code-review-graph__get_impact_radius_tool(node="<high-risk node name>", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_impact_radius_tool(node="<high-risk node name>", repo_root="<REPO_ROOT>")
     Returns all nodes that transitively depend on this node.
 
   Return schema only (no prose):

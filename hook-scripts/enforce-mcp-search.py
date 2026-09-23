@@ -200,11 +200,11 @@ WHAT THE GRAPH COVERS (and does NOT):
   • product-graph covers routes / .tt includes / SCSS tokens — but only partially. Its silence is a PROPOSAL to confirm, not proof of absence.
 
 STEP 1 — load schemas (deferred MCP tools):
-  ToolSearch(query="select:mcp__code-review-graph__semantic_search_nodes_tool,mcp__code-review-graph__query_graph_tool,mcp__code-review-graph__traverse_graph_tool")
+  ToolSearch(query="select:mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool,mcp__plugin_jintech-omg-dev_code-review-graph__query_graph_tool,mcp__plugin_jintech-omg-dev_code-review-graph__traverse_graph_tool")
 STEP 2 — query:
-  mcp__code-review-graph__semantic_search_nodes_tool(query="<term>", repo_root="{project_root}")
-  mcp__code-review-graph__query_graph_tool(pattern="callers_of|callees_of|imports_of|tests_for|file_summary", target="<name>", repo_root="{project_root}")
-  mcp__code-review-graph__traverse_graph_tool(query="<term>", mode="bfs", depth=3, repo_root="{project_root}")
+  mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool(query="<term>", repo_root="{project_root}")
+  mcp__plugin_jintech-omg-dev_code-review-graph__query_graph_tool(pattern="callers_of|callees_of|imports_of|tests_for|file_summary", target="<name>", repo_root="{project_root}")
+  mcp__plugin_jintech-omg-dev_code-review-graph__traverse_graph_tool(query="<term>", mode="bfs", depth=3, repo_root="{project_root}")
 
 SANCTIONED grep (the blessed graph-then-grep path — not a workaround):
   • If you ALREADY queried the graph for this target and it returned EMPTY, grep is now permitted to CONFIRM ABSENCE — re-issue the grep, it will pass (one-shot, scoped to that target).

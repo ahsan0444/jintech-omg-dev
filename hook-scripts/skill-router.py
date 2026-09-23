@@ -76,10 +76,18 @@ def skill_base_name(skill_id):
     return skill_id
 
 
-def render_skill_output(intent):
+LONG_PROMPT = 500  # longer prompts are briefs/pastes: hint, never force
+
+
+def render_skill_output(intent, firm=True):
     action = intent["action"]
     skill_id = action["skill"]
     base = skill_base_name(skill_id)
+    if not firm:
+        return (
+            f"Skill hint: this prompt may match `{base}` (skill=\"{skill_id}\"). "
+            f"Invoke it only if the user is asking for that task."
+        )
     return (
         f"⚡ ROUTING ACTIVE: The user's request matches the `{base}` skill.\n"
         f"You MUST invoke the Skill tool with skill=\"{skill_id}\" before doing anything else.\n"
@@ -122,10 +130,10 @@ def render_inline_output(intent):
     )
 
 
-def render_output(intent):
+def render_output(intent, firm=True):
     t = intent["action"]["type"]
     if t == "skill":
-        return render_skill_output(intent)
+        return render_skill_output(intent, firm)
     if t == "inline":
         return render_inline_output(intent)
     return None
@@ -192,6 +200,10 @@ def main():
     if not prompt:
         sys.exit(0)
 
+    # Stage 0.25: not typed by the user (task notifications, ! bash echo, system text)
+    if prompt.startswith("<") or "<task-notification>" in prompt or "[SYSTEM NOTIFICATION" in prompt:
+        sys.exit(0)
+
     # Stage 0.5: intercept known slash commands → route to jintech-omg-dev skill variant.
     # Must run BEFORE Stage 1 exit so /debug, /ticket, etc. get a routing instruction
     # even though the slash command mechanism already pre-loads the base skill content.
@@ -230,13 +242,15 @@ def main():
         if intent.get("confidence") != "high":
             continue
         if match_intent(prompt, intent):
-            out = render_output(intent)
+            out = render_output(intent, firm=len(prompt) <= LONG_PROMPT)
             log_event(prompt, intent["id"], intent["action"]["type"])
             if out:
                 sys.stdout.write(out)
             sys.exit(0)
 
-    # Stage 3: low-confidence
+    # Stage 3: low-confidence; skipped for long prompts
+    if len(prompt) > LONG_PROMPT:
+        sys.exit(0)
     low_matches = [
         it for it in intents
         if it.get("confidence") == "low" and match_intent(prompt, it)

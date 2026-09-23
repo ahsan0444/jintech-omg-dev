@@ -19,15 +19,15 @@ Agent(
 
   PHASE 0 — Graph-based structural review (MCP, 1-3 calls, run before linting):
     For each changed Perl file (use module basename as node name):
-    mcp__code-review-graph__get_review_context_tool(node="<module_basename>", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_review_context_tool(node="<module_basename>", repo_root="<REPO_ROOT>")
     → surfaces the node's role, its callers, callees, and any known complexity flags.
     Flag nodes with >10 callers as WARNING (high-impact change).
 
-    mcp__code-review-graph__find_large_functions_tool(repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__find_large_functions_tool(repo_root="<REPO_ROOT>")
     → check if any changed files contain functions flagged as overly large/complex.
     Flag matches as WARNING with function name and line count.
 
-    mcp__code-review-graph__get_knowledge_gaps_tool(repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_knowledge_gaps_tool(repo_root="<REPO_ROOT>")
     → check if any changed nodes appear in the gaps list (no test coverage).
     Flag matches as WARNING: "No test coverage for <node> — add tests before PR."
 

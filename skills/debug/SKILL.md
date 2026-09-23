@@ -132,30 +132,30 @@ Agent(
   HARD RULES: no file reads (sed/cat/Read/head/tail/less/more), no full-file greps (grep -n "." or grep -c ""), no find-then-read. Return paths and line ranges only.
 
   PHASE 1 — Find the entry point (MCP ONLY — grep is policy-blocked):
-    mcp__code-review-graph__semantic_search_nodes_tool(query="<most specific noun from symptom>", detail_level="minimal", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool(query="<most specific noun from symptom>", detail_level="minimal", repo_root="<REPO_ROOT>")
     If 0 results:
-      mcp__code-review-graph__traverse_graph_tool(query="<broader term>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
+      mcp__plugin_jintech-omg-dev_code-review-graph__traverse_graph_tool(query="<broader term>", mode="bfs", depth=2, repo_root="<REPO_ROOT>")
     Stop as soon as entry point file + line is identified.
 
   PHASE 1.5 — Named flow lookup (1 call, run after entry point found):
-    mcp__code-review-graph__list_flows_tool(repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__list_flows_tool(repo_root="<REPO_ROOT>")
     → if a named flow matches the symptom domain (e.g. "booking", "payment", "auth"), fetch it:
-    mcp__code-review-graph__get_flow_tool(flow_name="<matching flow name>", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_flow_tool(flow_name="<matching flow name>", repo_root="<REPO_ROOT>")
     → returns the full ordered node sequence for that flow — use this to map send→receive→effect without hop-by-hop graph queries.
     Skip if no matching named flow found.
 
   PHASE 2 — Trace to the broken layer (3-4 calls, MCP ONLY):
     Follow the call chain one hop at a time using graph queries:
-      mcp__code-review-graph__query_graph_tool(pattern="callees_of", target="<entry point node>", detail_level="minimal", repo_root="<REPO_ROOT>")
-      mcp__code-review-graph__query_graph_tool(pattern="callers_of", target="<receiver node>", detail_level="minimal", repo_root="<REPO_ROOT>")
+      mcp__plugin_jintech-omg-dev_code-review-graph__query_graph_tool(pattern="callees_of", target="<entry point node>", detail_level="minimal", repo_root="<REPO_ROOT>")
+      mcp__plugin_jintech-omg-dev_code-review-graph__query_graph_tool(pattern="callers_of", target="<receiver node>", detail_level="minimal", repo_root="<REPO_ROOT>")
     Map: Sender → what it calls → Receiver → what it reads or returns → Side effect (DOM, DB write, event)
 
     If the chain involves multi-step logic or the divergence point is still unclear:
-      mcp__code-review-graph__get_affected_flows_tool(node="<entry point node>", repo_root="<REPO_ROOT>")
+      mcp__plugin_jintech-omg-dev_code-review-graph__get_affected_flows_tool(node="<entry point node>", repo_root="<REPO_ROOT>")
       Returns criticality-ranked execution flows the node participates in — use to pinpoint which flow deviates.
 
     Check for unexpected coupling (1 call, only if divergence is still unclear after callees/callers):
-      mcp__code-review-graph__get_surprising_connections_tool(repo_root="<REPO_ROOT>")
+      mcp__plugin_jintech-omg-dev_code-review-graph__get_surprising_connections_tool(repo_root="<REPO_ROOT>")
       → surfaces unexpected cross-module dependencies. If the entry point appears in a surprising connection, this may explain why the bug manifests unexpectedly.
     Stop when the full send→receive→effect chain is mapped or budget is exhausted.
 
@@ -228,7 +228,7 @@ Agent(
   PHASE 1 — Route and controller (2 calls):
     Bash("grep -n '<route keyword from symptom>' <REPO_ROOT>/lib/OMG*.pm")
       (explicit-file grep — permitted; route paths are strings the graph does not index)
-    mcp__code-review-graph__semantic_search_nodes_tool(query="<controller or helper name>", repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__semantic_search_nodes_tool(query="<controller or helper name>", repo_root="<REPO_ROOT>")
       (directory-wide Grep into lib/ is hook-blocked — use MCP for symbol lookups)
 
   PHASE 2 — DB function if relevant (2 calls, only if query/data issue):
@@ -306,7 +306,7 @@ Agent(
     HARD RULES: no file reads (sed/cat/Read), no full-file greps. One Grep call, one optional follow-up.
 
   STEP 2 — Test coverage gap (1 call, run after step 1 regardless of verdict):
-    mcp__code-review-graph__get_knowledge_gaps_tool(repo_root="<REPO_ROOT>")
+    mcp__plugin_jintech-omg-dev_code-review-graph__get_knowledge_gaps_tool(repo_root="<REPO_ROOT>")
     Check if the node at the confirmed/suspected location appears in the gaps list.
     → explains WHY the bug wasn't caught (no test coverage for this node).
     If graph absent or tool errors: skip silently.

@@ -220,5 +220,19 @@ class TestFixtures(unittest.TestCase):
             self.fail("Fixture failures:\n" + "\n".join(failures))
 
 
+class TestNonUserPrompts(unittest.TestCase):
+    def test_task_notification_silent(self):
+        out, _ = run_hook("<task-notification><summary>create a pr</summary></task-notification>")
+        self.assertEqual(out.strip(), "")
+
+    def test_bash_input_echo_silent(self):
+        out, _ = run_hook("<bash-input>npx skills remove grill-me</bash-input>")
+        self.assertEqual(out.strip(), "")
+
+    def test_long_prompt_is_hint_not_force(self):
+        out, _ = run_hook("create a pr " + "context " * 100)
+        self.assertNotIn("MUST", out)
+
+
 if __name__ == "__main__":
     unittest.main()

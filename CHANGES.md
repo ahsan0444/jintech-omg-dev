@@ -1,3 +1,11 @@
+# CHANGES — jintech-omg-dev 1.3.3 → 1.3.4 (router noise, tool names, Jira cloudId)
+
+- **`hook-scripts/skill-router.py`** — skips prompts not typed by the user (task notifications, `!` bash echoes, system text). Prompts over 500 chars get a soft hint instead of "MUST invoke", and skip low-confidence matching. Fixes routing on background-agent notifications (7 false routes in one session). 3 regression tests added.
+- **Skills + `enforce-mcp-search.py`** — graph tool references now use the plugin namespace `mcp__plugin_jintech-omg-dev_code-review-graph__*`; the standalone `code-review-graph` MCP registration is removed from user config.
+- **`skills/ticket`, `skills/pr`** — Jira cloudId pinned to the oliveruk site UUID; the bare string `oliveruk` fails with "Failed to fetch cloud ID".
+
+---
+
 # CHANGES — jintech-omg-dev 1.3.2 → 1.3.3 (sync with mattpocock/skills c55ee46)
 
 Ports upstream improvements from [mattpocock/skills](https://github.com/mattpocock/skills) (HEAD `c55ee46`, 2026-09-18). OMG machinery (Jira MCP, `.planning/grill-<TICKET>.md`, `/ticket` handoff, subagent routing) unchanged.
